@@ -1,15 +1,31 @@
 import { normalizeBlocks } from "@bnomei/emdash-blocks";
-import type { LayoutBuilderColumn, LayoutBuilderRow, LayoutBuilderValue } from "./types";
+import type { LayoutBuilderColumn, LayoutBuilderRow, LayoutBuilderValue } from "./types.js";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function isValidSpan(span: string): boolean {
+  const [rawNumerator, rawDenominator] = span.split("/");
+  const numerator = Number(rawNumerator);
+  const denominator = Number(rawDenominator);
+
+  return (
+    Number.isInteger(numerator) &&
+    Number.isInteger(denominator) &&
+    numerator > 0 &&
+    denominator > 0 &&
+    numerator <= denominator &&
+    denominator <= 12
+  );
 }
 
 export function layoutSpans(layout: string): string[] {
   const spans = layout
     .split(",")
     .map((span) => span.trim())
-    .filter(Boolean);
+    .filter(Boolean)
+    .filter(isValidSpan);
 
   return spans.length ? spans : ["1/1"];
 }

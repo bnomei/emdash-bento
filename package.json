@@ -52,7 +52,8 @@
     "prepack": "npm run build",
     "prepublishOnly": "npm run check && npm run typecheck && npm run pack:check && npm run types:check",
     "types:check": "attw --pack . --profile esm-only --no-summary",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "rm -rf .test-dist && tsc --ignoreConfig --module NodeNext --moduleResolution NodeNext --target ES2022 --types node --skipLibCheck --outDir .test-dist src/layout.test.ts && node --test .test-dist/layout.test.js"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.3",
