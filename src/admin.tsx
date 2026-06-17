@@ -15,6 +15,14 @@ import type {
   BlockBuilderDefinition,
   BlockBuilderValue,
 } from "@bnomei/emdash-blocks";
+import {
+  DEFAULT_LAYOUT_PATTERN,
+  columnsToLayout,
+  layoutColumns as buildLayoutColumns,
+  layoutSpans,
+  normalizeLayoutPattern,
+  spanToGridColumns,
+} from "./layout";
 import type { LayoutBuilderColumn, LayoutBuilderRow, LayoutBuilderValue } from "./types";
 
 type FieldWidgetProps<TOptions = Record<string, unknown>> = {
@@ -148,7 +156,7 @@ const helpTextStyle = {
   fontSize: "0.85rem",
 } satisfies CSSProperties;
 
-const defaultLayoutPattern = "1/1";
+const defaultLayoutPattern = DEFAULT_LAYOUT_PATTERN;
 const defaultNewLayoutPattern = "1/1, 1/2, 1/3";
 const layoutInputPlaceholder = defaultNewLayoutPattern;
 
@@ -206,10 +214,6 @@ function normalizeColumn(
   };
 }
 
-function columnsToLayout(columns: LayoutBuilderColumn[]) {
-  return columns.length ? columns.map((column) => column.span).join(", ") : defaultLayoutPattern;
-}
-
 function normalizeRow(value: unknown, rowIndex: number): LayoutBuilderRow {
   const record = asRecord(value);
   const settings =
@@ -236,61 +240,6 @@ function asLayouts(value: unknown): LayoutBuilderValue {
   return Array.isArray(value) ? value.map((item, index) => normalizeRow(item, index)) : [];
 }
 
-function spanToGridColumns(span: string) {
-  const [rawNumerator, rawDenominator] = span.split("/");
-  const numerator = Number(rawNumerator);
-  const denominator = Number(rawDenominator);
-
-  if (
-    Number.isInteger(numerator) &&
-    Number.isInteger(denominator) &&
-    numerator > 0 &&
-    denominator > 0
-  ) {
-    const columns = Math.round((numerator / denominator) * 12);
-    return Math.min(12, Math.max(1, columns));
-  }
-
-  return 12;
-}
-
-function isValidSpan(span: string) {
-  const [rawNumerator, rawDenominator] = span.split("/");
-  const numerator = Number(rawNumerator);
-  const denominator = Number(rawDenominator);
-  return (
-    Number.isInteger(numerator) &&
-    Number.isInteger(denominator) &&
-    numerator > 0 &&
-    denominator > 0 &&
-    numerator <= denominator &&
-    denominator <= 12
-  );
-}
-
-function validLayoutSpans(layout: string): string[] {
-  return layout
-    .split(",")
-    .map((span) => span.trim())
-    .filter(Boolean)
-    .filter(isValidSpan);
-}
-
-function layoutSpans(layout: string): string[] {
-  const spans = validLayoutSpans(layout);
-  return spans.length ? spans : ["1/1"];
-}
-
-function normalizeLayoutPattern(layout: string, fallbackLayout = "1/1") {
-  const spans = validLayoutSpans(layout);
-  if (spans.length) return spans.join(", ");
-
-  if (!fallbackLayout.trim()) return "";
-
-  const fallbackSpans = validLayoutSpans(fallbackLayout);
-  return (fallbackSpans.length ? fallbackSpans : ["1/1"]).join(", ");
-}
-
 function compactControlWidth(values: string[], min = 8, max = 42) {
   const contentWidth = values.reduce((longest, value) => Math.max(longest, value.length), 0);
   return Math.min(Math.max(contentWidth + 6, min), max);
@@ -306,31 +255,15 @@ function spanOptions(layout: string) {
     .map((span) => ({ value: span, label: span }));
 }
 
-function firstLayoutSpan(layout: string) {
-  return layoutSpans(layout)[0] ?? "1/1";
-}
-
 function layoutColumns(
   layout: string,
   existingColumns: LayoutBuilderColumn[] = [],
 ): LayoutBuilderColumn[] {
-  const spans = layoutSpans(layout);
-  const columnCount = spans.length;
-
-  return Array.from({ length: columnCount }, (_value, index) => ({
-    id: existingColumns[index]?.id ?? randomId("column"),
-    span: spans[index] ?? existingColumns[index]?.span ?? "1/1",
-    blocks: existingColumns[index]?.blocks ?? [],
+  return buildLayoutColumns(layout, existingColumns, (_index, span) => ({
+    id: randomId("column"),
+    span,
+    blocks: [],
   }));
-}
-
-function defaultLayoutRow(): LayoutBuilderRow {
-  const layout = defaultLayoutPattern;
-  return {
-    id: "layout-1",
-    layout,
-    columns: [{ id: "layout-1-column-1", span: firstLayoutSpan(layout), blocks: [] }],
-  };
 }
 
 function LayoutPatternField({

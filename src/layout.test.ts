@@ -7,12 +7,20 @@ import {
   spanToGridColumns,
   visibleLayoutRows,
 } from "./render.js";
+import { layoutColumns, normalizeLayoutPattern } from "./layout.js";
 import type { LayoutBuilderRow } from "./types.js";
 
 test("layoutSpans trims, filters, and falls back to a full-width span", () => {
   assert.deepEqual(layoutSpans(" 1/2, , 1/3 , invalid "), ["1/2", "1/3"]);
   assert.deepEqual(layoutSpans(""), ["1/1"]);
-  assert.deepEqual(layoutSpans("0/1, 3/2, 1/13, nope"), ["1/1"]);
+  assert.deepEqual(layoutSpans("0/1, 3/2, 1/13, 1/2/3, nope"), ["1/1"]);
+});
+
+test("normalizeLayoutPattern keeps valid spans and normalizes invalid fallbacks", () => {
+  assert.equal(normalizeLayoutPattern(" 1/2, nope, 1/3 "), "1/2, 1/3");
+  assert.equal(normalizeLayoutPattern("nope", "1/4, bad, 3/4"), "1/4, 3/4");
+  assert.equal(normalizeLayoutPattern("nope", ""), "");
+  assert.equal(normalizeLayoutPattern("nope", "also-nope"), "1/1");
 });
 
 test("spanToGridColumns converts valid spans to a twelve-column grid", () => {
@@ -75,6 +83,43 @@ test("normalizeLayoutRow derives layout from updated columns when row layout is 
   assert.deepEqual(
     row.columns.map((column) => column.span),
     ["1/4", "3/4"],
+  );
+});
+
+test("normalizeLayoutRow filters invalid row layouts and syncs columns to the parsed layout", () => {
+  const row = normalizeLayoutRow({
+    id: "mixed",
+    layout: " 1/2, nope, 1/3, 4/3 ",
+    columns: [
+      { id: "left", span: "bad", blocks: [] },
+      { id: "right", span: "1/4", blocks: [] },
+      { id: "unused", span: "1/1", blocks: [] },
+    ],
+  });
+
+  assert.equal(row.layout, "1/2, 1/3");
+  assert.deepEqual(
+    row.columns.map((column) => ({ id: column.id, span: column.span })),
+    [
+      { id: "left", span: "1/2" },
+      { id: "right", span: "1/3" },
+    ],
+  );
+});
+
+test("layoutColumns creates missing columns from the shared parsed layout", () => {
+  const columns = layoutColumns("1/2, nope, 1/3", [], (index, span) => ({
+    id: `new-${index + 1}`,
+    span,
+    blocks: [],
+  }));
+
+  assert.deepEqual(
+    columns.map((column) => ({ id: column.id, span: column.span })),
+    [
+      { id: "new-1", span: "1/2" },
+      { id: "new-2", span: "1/3" },
+    ],
   );
 });
 

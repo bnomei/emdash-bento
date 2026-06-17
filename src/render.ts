@@ -1,52 +1,12 @@
 import { normalizeBlocks } from "@bnomei/emdash-blocks";
+import { columnsToLayout, layoutColumns, normalizeLayoutPattern } from "./layout.js";
 import type { LayoutBuilderColumn, LayoutBuilderRow, LayoutBuilderValue } from "./types.js";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
-function isValidSpan(span: string): boolean {
-  const [rawNumerator, rawDenominator] = span.split("/");
-  const numerator = Number(rawNumerator);
-  const denominator = Number(rawDenominator);
-
-  return (
-    Number.isInteger(numerator) &&
-    Number.isInteger(denominator) &&
-    numerator > 0 &&
-    denominator > 0 &&
-    numerator <= denominator &&
-    denominator <= 12
-  );
-}
-
-export function layoutSpans(layout: string): string[] {
-  const spans = layout
-    .split(",")
-    .map((span) => span.trim())
-    .filter(Boolean)
-    .filter(isValidSpan);
-
-  return spans.length ? spans : ["1/1"];
-}
-
-export function spanToGridColumns(span?: string): number {
-  const [rawNumerator, rawDenominator] = (span ?? "").split("/");
-  const numerator = Number(rawNumerator);
-  const denominator = Number(rawDenominator);
-
-  if (
-    Number.isInteger(numerator) &&
-    Number.isInteger(denominator) &&
-    numerator > 0 &&
-    denominator > 0
-  ) {
-    const columns = Math.round((numerator / denominator) * 12);
-    return Math.min(12, Math.max(1, columns));
-  }
-
-  return 12;
-}
+export { layoutSpans, spanToGridColumns } from "./layout.js";
 
 export function isLayoutBuilderRow(value: unknown): value is LayoutBuilderRow {
   const columns = isRecord(value) && Array.isArray(value.columns) ? value.columns : [];
@@ -73,15 +33,20 @@ export function normalizeLayoutRow(layout: LayoutBuilderRow, rowIndex = 0): Layo
   const normalizedColumns = columns.map((column, columnIndex) =>
     normalizeLayoutColumn(column, rowIndex, columnIndex),
   );
+  const layoutPattern =
+    typeof layout.layout === "string" && layout.layout.trim()
+      ? normalizeLayoutPattern(layout.layout)
+      : columnsToLayout(normalizedColumns);
 
   return {
     ...layout,
     id: typeof layout.id === "string" && layout.id ? layout.id : `layout-${rowIndex + 1}`,
-    layout:
-      typeof layout.layout === "string" && layout.layout
-        ? layout.layout
-        : normalizedColumns.map((column) => column.span).join(", ") || "1/1",
-    columns: normalizedColumns,
+    layout: layoutPattern,
+    columns: layoutColumns(layoutPattern, normalizedColumns, (columnIndex, span) => ({
+      id: `layout-${rowIndex + 1}-column-${columnIndex + 1}`,
+      span,
+      blocks: [],
+    })),
   };
 }
 
