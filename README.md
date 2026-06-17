@@ -94,6 +94,11 @@ type LayoutBuilderValue = Array<{
 }>;
 ```
 
+Empty layout fields stay empty when the admin widget mounts, so opening an
+untouched entry does not write a default row or mark the field dirty. The widget
+shows an empty state with the Add Layout button, and clicking that button creates
+the first editable row.
+
 Each row stores exactly one `layout` pattern. The pattern is a comma-separated
 list of column spans, for example `1/1`, `1/2, 1/2`, or `1/1, 1/3, 2/3`.
 Editing the pattern updates the row's columns by position, preserving existing

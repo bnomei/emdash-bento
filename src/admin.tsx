@@ -7,7 +7,7 @@ import {
   PlusIcon,
   TrashIcon,
 } from "@phosphor-icons/react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import type { CSSProperties, ChangeEvent } from "react";
 import { BlocksField } from "@bnomei/emdash-blocks/admin";
 import type {
@@ -78,6 +78,16 @@ const columnGridStyle = {
 const addControlsStyle = {
   display: "grid",
   gap: "0.5rem",
+} satisfies CSSProperties;
+
+const emptyStateStyle = {
+  border:
+    "1px dashed var(--color-kumo-hairline, var(--color-kumo-line, color-mix(in srgb, currentColor 20%, transparent)))",
+  borderRadius: "0.5rem",
+  padding: "0.75rem",
+  display: "grid",
+  gap: "0.5rem",
+  color: "var(--text-color-kumo-subtle, currentColor)",
 } satisfies CSSProperties;
 
 const cardHeaderStyle = {
@@ -391,21 +401,7 @@ export function LayoutsField({
   id = "bento",
   options,
 }: FieldWidgetProps<LayoutBuilderOptions>) {
-  const storedLayouts = asLayouts(value);
-  const layouts = storedLayouts.length ? storedLayouts : [defaultLayoutRow()];
-  const didPrefillEmptyLayout = useRef(false);
-
-  useEffect(() => {
-    if (storedLayouts.length > 0) {
-      didPrefillEmptyLayout.current = false;
-      return;
-    }
-
-    if (!didPrefillEmptyLayout.current) {
-      didPrefillEmptyLayout.current = true;
-      onChange([defaultLayoutRow()]);
-    }
-  }, [storedLayouts.length, onChange]);
+  const layouts = asLayouts(value);
 
   function updateLayouts(nextLayouts: LayoutBuilderValue) {
     onChange(
@@ -459,6 +455,12 @@ export function LayoutsField({
 
   return (
     <div id={id} tabIndex={-1} style={wrapperStyle}>
+      {layouts.length === 0 ? (
+        <div style={emptyStateStyle}>
+          <strong>No layouts yet</strong>
+          <span>Add a layout to create the first row.</span>
+        </div>
+      ) : null}
       {layouts.map((row, rowIndex) => {
         const layoutMenuOptions =
           layouts.length > 1

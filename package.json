@@ -46,6 +46,7 @@
     "access": "public"
   },
   "scripts": {
+    "test": "node --test",
     "build": "vp pack src/index.ts src/admin.tsx --format esm --dts --clean --tsconfig tsconfig.json",
     "check": "vp check .",
     "pack:check": "vp pack src/index.ts src/admin.tsx --format esm --dts --clean --tsconfig tsconfig.json --publint",
