@@ -177,7 +177,7 @@ happen before values are saved into EmDash.
 
 ## Status
 
-This package ships as a native EmDash plugin because the editor is a trusted React admin field widget. Package exports point at tsdown-built `dist/` JavaScript and declarations.
+This package ships as a native EmDash plugin because the editor is a trusted React admin field widget. Package exports point at Viteplus `vp pack`-built `dist/` JavaScript and declarations; use `npm run build` for the production pack and `npm run pack:check` for the publint-verified pack check.
 
 ## Related Packages
 
