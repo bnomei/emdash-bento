@@ -8,7 +8,26 @@ import {
   visibleLayoutRows,
 } from "./render.js";
 import { columnsToLayout, layoutColumns, normalizeLayoutPattern } from "./layout.js";
+import { bentoMessage, formatBentoMessage, localeFallbacks, localizedString } from "./i18n.js";
 import type { LayoutBuilderRow } from "./types.js";
+
+test("bento messages follow the EmDash-style fallback chain", () => {
+  const i18n = {
+    locale: "fr-CA",
+    defaultLocale: "en",
+    locales: ["en", "fr", "fr-CA"],
+    fallback: { "fr-CA": "fr", fr: "en" },
+    messages: {
+      fr: { addLayout: "Ajouter une mise en page" },
+      en: { columnWidth: "Column {column}" },
+    },
+  };
+
+  assert.deepEqual(localeFallbacks(i18n), ["fr-CA", "fr", "en"]);
+  assert.equal(bentoMessage("addLayout", i18n), "Ajouter une mise en page");
+  assert.equal(formatBentoMessage("columnWidth", i18n, { column: 2 }), "Column 2");
+  assert.equal(localizedString({ en: "Grid", fr: "Grille" }, i18n), "Grille");
+});
 
 test("layoutSpans trims, filters, and falls back to a full-width span", () => {
   assert.deepEqual(layoutSpans(" 1/2, , 1/3 , invalid "), ["1/2", "1/3"]);

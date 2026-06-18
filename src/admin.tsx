@@ -10,11 +10,9 @@ import {
 import { useEffect, useState } from "react";
 import type { CSSProperties, ChangeEvent } from "react";
 import { BlocksField } from "@bnomei/emdash-blocks/admin";
-import type {
-  BlockBuilderBlock,
-  BlockBuilderDefinition,
-  BlockBuilderValue,
-} from "@bnomei/emdash-blocks";
+import type { BlockBuilderBlock, BlockBuilderValue } from "@bnomei/emdash-blocks";
+import { useAdminLocale } from "./admin-locale";
+import { bentoMessage, formatBentoMessage, localizedString, type BentoI18nConfig } from "./i18n";
 import {
   DEFAULT_LAYOUT_PATTERN,
   columnsToLayout,
@@ -24,19 +22,18 @@ import {
   normalizeLayoutPattern,
   spanToGridColumns,
 } from "./layout";
-import type { LayoutBuilderColumn, LayoutBuilderRow, LayoutBuilderValue } from "./types";
+import type {
+  LayoutBuilderColumn,
+  LayoutBuilderOptions,
+  LayoutBuilderRow,
+  LayoutBuilderValue,
+} from "./types";
 
 type FieldWidgetProps<TOptions = Record<string, unknown>> = {
   value: unknown;
   onChange: (value: unknown) => void;
   id?: string;
   options?: TOptions;
-};
-
-type LayoutBuilderOptions = {
-  blockTypes?: BlockBuilderDefinition[];
-  blockDefinitions?: BlockBuilderDefinition[];
-  helpText?: string;
 };
 
 const wrapperStyle = {
@@ -255,6 +252,11 @@ function compactControlWidth(values: string[], min = 8, max = 42) {
   return Math.min(Math.max(contentWidth + 6, min), max);
 }
 
+function useBentoI18n(i18n: BentoI18nConfig | undefined): BentoI18nConfig {
+  const locale = useAdminLocale(i18n?.locale ?? i18n?.defaultLocale);
+  return { ...i18n, locale };
+}
+
 function spanOptions(layout: string) {
   const spans = new Set(layoutSpans(layout));
   return Array.from(spans)
@@ -280,7 +282,7 @@ function LayoutPatternField({
   id,
   value,
   fallbackLayout,
-  ariaLabel = "Layout",
+  ariaLabel,
   style,
   onCommit,
 }: {
@@ -333,7 +335,7 @@ function BlocksMiniEditor({
       value={blocks}
       onChange={(nextValue) => onChange(Array.isArray(nextValue) ? nextValue : [])}
       id={id}
-      options={options}
+      options={options as Parameters<typeof BlocksField>[0]["options"]}
     />
   );
 }
@@ -344,6 +346,7 @@ export function LayoutsField({
   id = "bento",
   options,
 }: FieldWidgetProps<LayoutBuilderOptions>) {
+  const i18n = useBentoI18n(options?.i18n);
   const layouts = asLayouts(value);
 
   function updateLayouts(nextLayouts: LayoutBuilderValue) {
@@ -400,8 +403,8 @@ export function LayoutsField({
     <div id={id} tabIndex={-1} style={wrapperStyle}>
       {layouts.length === 0 ? (
         <div style={emptyStateStyle}>
-          <strong>No layouts yet</strong>
-          <span>Add a layout to create the first row.</span>
+          <strong>{bentoMessage("noLayoutsTitle", i18n)}</strong>
+          <span>{bentoMessage("noLayoutsDescription", i18n)}</span>
         </div>
       ) : null}
       {layouts.map((row, rowIndex) => {
@@ -413,7 +416,7 @@ export function LayoutsField({
                       {
                         icon: <ArrowUpIcon size={14} />,
                         id: "move-up",
-                        tooltip: "Move layout up",
+                        tooltip: bentoMessage("moveLayoutUp", i18n),
                         onClick: () => moveLayout(rowIndex, rowIndex - 1),
                       },
                     ]
@@ -423,7 +426,7 @@ export function LayoutsField({
                       {
                         icon: <ArrowDownIcon size={14} />,
                         id: "move-down",
-                        tooltip: "Move layout down",
+                        tooltip: bentoMessage("moveLayoutDown", i18n),
                         onClick: () => moveLayout(rowIndex, rowIndex + 1),
                       },
                     ]
@@ -431,7 +434,7 @@ export function LayoutsField({
                 {
                   icon: <TrashIcon size={14} />,
                   id: "remove",
-                  tooltip: "Remove layout",
+                  tooltip: bentoMessage("removeLayout", i18n),
                   onClick: () => updateLayouts(layouts.filter((_row, index) => index !== rowIndex)),
                 },
               ]
@@ -453,6 +456,7 @@ export function LayoutsField({
               <LayoutPatternField
                 id={`${id}-${rowIndex}-layout`}
                 value={row.layout}
+                ariaLabel={bentoMessage("layout", i18n)}
                 onCommit={(layout) =>
                   updateRow(rowIndex, {
                     ...row,
@@ -512,7 +516,9 @@ export function LayoutsField({
                               }}
                             >
                               <Select
-                                aria-label={`Column ${columnIndex + 1} width`}
+                                aria-label={formatBentoMessage("columnWidth", i18n, {
+                                  column: columnIndex + 1,
+                                })}
                                 className="w-full"
                                 items={columnSpanOptions}
                                 value={columnSpanValue}
@@ -542,7 +548,7 @@ export function LayoutsField({
                                       {
                                         icon: <ArrowLeftIcon size={14} />,
                                         id: "move-left",
-                                        tooltip: "Move column left",
+                                        tooltip: bentoMessage("moveColumnLeft", i18n),
                                         onClick: () =>
                                           moveColumn(rowIndex, columnIndex, columnIndex - 1),
                                       },
@@ -553,7 +559,7 @@ export function LayoutsField({
                                       {
                                         icon: <ArrowRightIcon size={14} />,
                                         id: "move-right",
-                                        tooltip: "Move column right",
+                                        tooltip: bentoMessage("moveColumnRight", i18n),
                                         onClick: () =>
                                           moveColumn(rowIndex, columnIndex, columnIndex + 1),
                                       },
@@ -562,7 +568,7 @@ export function LayoutsField({
                                 {
                                   icon: <TrashIcon size={14} />,
                                   id: "remove",
-                                  tooltip: "Remove column",
+                                  tooltip: bentoMessage("removeColumn", i18n),
                                   onClick: () => {
                                     const nextColumns = row.columns.filter(
                                       (_column, index) => index !== columnIndex,
@@ -610,7 +616,7 @@ export function LayoutsField({
                   });
                 }}
               >
-                Add Column
+                {bentoMessage("addColumn", i18n)}
               </Button>
             </div>
           </section>
@@ -634,10 +640,12 @@ export function LayoutsField({
             ]);
           }}
         >
-          Add Layout
+          {bentoMessage("addLayout", i18n)}
         </Button>
       </div>
-      {options?.helpText ? <small style={helpTextStyle}>{options.helpText}</small> : null}
+      {options?.helpText ? (
+        <small style={helpTextStyle}>{localizedString(options.helpText, i18n)}</small>
+      ) : null}
     </div>
   );
 }

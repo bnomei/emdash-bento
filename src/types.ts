@@ -1,4 +1,5 @@
-import type { BlockBuilderValue } from "@bnomei/emdash-blocks";
+import type { BlockBuilderDefinition, BlockBuilderValue } from "@bnomei/emdash-blocks";
+import type { BentoI18nConfig, LocalizedString } from "./i18n.js";
 
 export type LayoutBuilderColumn = {
   id: string;
@@ -14,3 +15,10 @@ export type LayoutBuilderRow = {
 };
 
 export type LayoutBuilderValue = LayoutBuilderRow[];
+
+export type LayoutBuilderOptions = {
+  blockTypes?: BlockBuilderDefinition[];
+  blockDefinitions?: BlockBuilderDefinition[];
+  helpText?: LocalizedString;
+  i18n?: BentoI18nConfig;
+};

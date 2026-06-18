@@ -12,7 +12,7 @@ test("empty layouts stay empty on mount", () => {
 
 test("empty layouts show an add-first-row empty state", () => {
   assert.match(source, /layouts\.length === 0/);
-  assert.match(source, /No layouts yet/);
-  assert.match(source, /Add a layout to create the first row\./);
-  assert.match(source, /Add Layout/);
+  assert.match(source, /bentoMessage\("noLayoutsTitle"/);
+  assert.match(source, /bentoMessage\("noLayoutsDescription"/);
+  assert.match(source, /bentoMessage\("addLayout"/);
 });
