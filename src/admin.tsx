@@ -19,6 +19,7 @@ import {
   DEFAULT_LAYOUT_PATTERN,
   columnsToLayout,
   layoutColumns as buildLayoutColumns,
+  layoutColumnsPreservingExisting,
   layoutSpans,
   normalizeLayoutPattern,
   spanToGridColumns,
@@ -223,16 +224,25 @@ function normalizeRow(value: unknown, rowIndex: number): LayoutBuilderRow {
   const existingColumns = Array.isArray(record.columns)
     ? record.columns.map((column, columnIndex) => normalizeColumn(column, rowIndex, columnIndex))
     : [];
-  const layout =
+  const layoutPattern =
     typeof record.layout === "string" && record.layout.trim()
       ? normalizeLayoutPattern(record.layout, defaultLayoutPattern)
       : normalizeLayoutPattern(columnsToLayout(existingColumns), defaultLayoutPattern);
+  const columns = layoutColumnsPreservingExisting(
+    layoutPattern,
+    existingColumns,
+    (_index, span) => ({
+      id: randomId("column"),
+      span,
+      blocks: [],
+    }),
+  );
 
   return {
     id: typeof record.id === "string" && record.id ? record.id : `layout-${rowIndex + 1}`,
-    layout,
+    layout: columnsToLayout(columns),
     settings,
-    columns: layoutColumns(layout, existingColumns),
+    columns,
   };
 }
 

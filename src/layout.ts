@@ -41,6 +41,11 @@ export function validLayoutSpans(layout?: string | null): string[] {
     .filter(isValidLayoutSpan);
 }
 
+function normalizeLayoutSpan(span?: string | null): string {
+  const trimmed = (span ?? "").trim();
+  return isValidLayoutSpan(trimmed) ? trimmed : DEFAULT_LAYOUT_PATTERN;
+}
+
 export function layoutSpans(layout?: string | null): string[] {
   const spans = validLayoutSpans(layout);
   return spans.length ? spans : [DEFAULT_LAYOUT_PATTERN];
@@ -64,7 +69,7 @@ export function columnsToLayout(
   fallbackLayout = DEFAULT_LAYOUT_PATTERN,
 ): string {
   return columns.length
-    ? normalizeLayoutPattern(columns.map((column) => column.span).join(", "), fallbackLayout)
+    ? columns.map((column) => normalizeLayoutSpan(column.span)).join(", ")
     : normalizeLayoutPattern(fallbackLayout);
 }
 
@@ -101,4 +106,19 @@ export function layoutColumns(
       blocks: column.blocks ?? [],
     };
   });
+}
+
+export function layoutColumnsPreservingExisting(
+  layout: string,
+  existingColumns: readonly LayoutBuilderColumn[] = [],
+  createColumn: LayoutColumnFactory = defaultLayoutColumn,
+): LayoutBuilderColumn[] {
+  const columns = layoutColumns(layout, existingColumns, createColumn);
+  const extraColumns = existingColumns.slice(columns.length).map((column) => ({
+    ...column,
+    span: normalizeLayoutSpan(column.span),
+    blocks: column.blocks ?? [],
+  }));
+
+  return [...columns, ...extraColumns];
 }

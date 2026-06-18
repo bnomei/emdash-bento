@@ -7,7 +7,7 @@ import {
   spanToGridColumns,
   visibleLayoutRows,
 } from "./render.js";
-import { layoutColumns, normalizeLayoutPattern } from "./layout.js";
+import { columnsToLayout, layoutColumns, normalizeLayoutPattern } from "./layout.js";
 import type { LayoutBuilderRow } from "./types.js";
 
 test("layoutSpans trims, filters, and falls back to a full-width span", () => {
@@ -21,6 +21,10 @@ test("normalizeLayoutPattern keeps valid spans and normalizes invalid fallbacks"
   assert.equal(normalizeLayoutPattern("nope", "1/4, bad, 3/4"), "1/4, 3/4");
   assert.equal(normalizeLayoutPattern("nope", ""), "");
   assert.equal(normalizeLayoutPattern("nope", "also-nope"), "1/1");
+});
+
+test("columnsToLayout preserves column positions when stored spans are invalid", () => {
+  assert.equal(columnsToLayout([{ span: "bad" }, { span: "1/3" }]), "1/1, 1/3");
 });
 
 test("spanToGridColumns converts valid spans to a twelve-column grid", () => {
@@ -86,7 +90,36 @@ test("normalizeLayoutRow derives layout from updated columns when row layout is 
   );
 });
 
-test("normalizeLayoutRow filters invalid row layouts and syncs columns to the parsed layout", () => {
+test("normalizeLayoutRow preserves stored columns when row layouts are stale", () => {
+  const row = normalizeLayoutRow({
+    id: "legacy",
+    layout: "1/1",
+    columns: [
+      {
+        id: "main",
+        span: "1/1",
+        blocks: [{ id: "headline", type: "text", props: { text: "Hi" } }],
+      },
+      {
+        id: "aside",
+        span: "1/2",
+        blocks: [{ id: "note", type: "text", props: { text: "Keep me" } }],
+      },
+    ],
+  });
+
+  assert.equal(row.layout, "1/1, 1/2");
+  assert.deepEqual(
+    row.columns.map((column) => ({ id: column.id, span: column.span })),
+    [
+      { id: "main", span: "1/1" },
+      { id: "aside", span: "1/2" },
+    ],
+  );
+  assert.equal(row.columns[1]?.blocks[0]?.id, "note");
+});
+
+test("normalizeLayoutRow filters invalid row layouts and preserves extra stored columns", () => {
   const row = normalizeLayoutRow({
     id: "mixed",
     layout: " 1/2, nope, 1/3, 4/3 ",
@@ -97,12 +130,13 @@ test("normalizeLayoutRow filters invalid row layouts and syncs columns to the pa
     ],
   });
 
-  assert.equal(row.layout, "1/2, 1/3");
+  assert.equal(row.layout, "1/2, 1/3, 1/1");
   assert.deepEqual(
     row.columns.map((column) => ({ id: column.id, span: column.span })),
     [
       { id: "left", span: "1/2" },
       { id: "right", span: "1/3" },
+      { id: "unused", span: "1/1" },
     ],
   );
 });

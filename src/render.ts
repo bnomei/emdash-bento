@@ -1,5 +1,9 @@
 import { normalizeBlocks } from "@bnomei/emdash-blocks";
-import { columnsToLayout, layoutColumns, normalizeLayoutPattern } from "./layout.js";
+import {
+  columnsToLayout,
+  layoutColumnsPreservingExisting,
+  normalizeLayoutPattern,
+} from "./layout.js";
 import type { LayoutBuilderColumn, LayoutBuilderRow, LayoutBuilderValue } from "./types.js";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -29,24 +33,29 @@ function normalizeLayoutColumn(
 }
 
 export function normalizeLayoutRow(layout: LayoutBuilderRow, rowIndex = 0): LayoutBuilderRow {
-  const columns = Array.isArray(layout.columns) ? layout.columns : [];
-  const normalizedColumns = columns.map((column, columnIndex) =>
+  const storedColumns = Array.isArray(layout.columns) ? layout.columns : [];
+  const normalizedColumns = storedColumns.map((column, columnIndex) =>
     normalizeLayoutColumn(column, rowIndex, columnIndex),
   );
   const layoutPattern =
     typeof layout.layout === "string" && layout.layout.trim()
       ? normalizeLayoutPattern(layout.layout)
       : columnsToLayout(normalizedColumns);
+  const columns = layoutColumnsPreservingExisting(
+    layoutPattern,
+    normalizedColumns,
+    (columnIndex, span) => ({
+      id: `layout-${rowIndex + 1}-column-${columnIndex + 1}`,
+      span,
+      blocks: [],
+    }),
+  );
 
   return {
     ...layout,
     id: typeof layout.id === "string" && layout.id ? layout.id : `layout-${rowIndex + 1}`,
-    layout: layoutPattern,
-    columns: layoutColumns(layoutPattern, normalizedColumns, (columnIndex, span) => ({
-      id: `layout-${rowIndex + 1}-column-${columnIndex + 1}`,
-      span,
-      blocks: [],
-    })),
+    layout: columnsToLayout(columns),
+    columns,
   };
 }
 

@@ -46,7 +46,7 @@
     "access": "public"
   },
   "scripts": {
-    "test": "rm -rf .test-dist && tsc --ignoreConfig --module NodeNext --moduleResolution NodeNext --target ES2022 --types node --skipLibCheck --outDir .test-dist src/layout.test.ts && node --test .test-dist/layout.test.js",
+    "test": "rm -rf .test-dist && tsc --ignoreConfig --module NodeNext --moduleResolution NodeNext --target ES2022 --types node --skipLibCheck --outDir .test-dist src/layout.test.ts && node --test .test-dist/layout.test.js test/admin-empty-layout.test.mjs",
     "build": "vp pack src/index.ts src/admin.tsx --format esm --dts --clean --tsconfig tsconfig.json",
     "check": "vp check .",
     "pack:check": "vp pack src/index.ts src/admin.tsx --format esm --dts --clean --tsconfig tsconfig.json --publint",
