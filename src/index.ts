@@ -32,7 +32,7 @@ export type BentoDescriptorOptions = {
 };
 
 const PLUGIN_ID = "bento";
-const PLUGIN_VERSION = "0.2.0";
+const PLUGIN_VERSION = "0.2.1";
 const PACKAGE_NAME = "@bnomei/emdash-bento";
 
 export function bentoPlugin(options: BentoDescriptorOptions = {}): PluginDescriptor {

@@ -4,6 +4,11 @@ All notable changes to this package will be documented in this file.
 
 This project follows semantic versioning.
 
+## 0.2.1 - 2026-06-18
+
+- Updated the `@bnomei/emdash-blocks` peer and development dependency range to
+  `^0.2.0`.
+
 ## 0.2.0 - 2026-06-18
 
 - Added EmDash-shaped `i18n` options with `locale`, `defaultLocale`,

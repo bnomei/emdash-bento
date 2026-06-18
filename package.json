@@ -1,6 +1,6 @@
 {
   "name": "@bnomei/emdash-bento",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Bento grid field widget for EmDash JSON fields, using Block Builder for nested blocks.",
   "keywords": [
     "astro",
@@ -57,7 +57,7 @@
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.3",
-    "@bnomei/emdash-blocks": "^0.1.0",
+    "@bnomei/emdash-blocks": "^0.2.0",
     "@cloudflare/kumo": "^2.5.2",
     "@phosphor-icons/react": "^2.1.10",
     "@types/react": "^19.2.17",
@@ -70,7 +70,7 @@
     "vite-plus": "^0.1.24"
   },
   "peerDependencies": {
-    "@bnomei/emdash-blocks": "^0.1.0",
+    "@bnomei/emdash-blocks": "^0.2.0",
     "@cloudflare/kumo": "^2.5.0",
     "@phosphor-icons/react": "^2.1.10",
     "emdash": ">=0.17.0",

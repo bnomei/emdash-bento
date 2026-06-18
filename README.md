@@ -175,7 +175,7 @@ happen before values are saved into EmDash.
 - ESM entry: `@bnomei/emdash-bento`.
 - Admin entry: `@bnomei/emdash-bento/admin`.
 - Type declarations are included from `dist/`.
-- Peer dependencies: `@bnomei/emdash-blocks` `^0.1.0`, `emdash`
+- Peer dependencies: `@bnomei/emdash-blocks` `^0.2.0`, `emdash`
   `>=0.17.0`, `react` `^18.0.0 || ^19.0.0`, `react-dom`
   `^18.0.0 || ^19.0.0`, `@cloudflare/kumo` `^2.5.0`, and
   `@phosphor-icons/react` `^2.1.10`.
