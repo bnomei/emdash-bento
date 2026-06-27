@@ -1,5 +1,5 @@
 DEVANA-FINDING: v1
-DEVANA-STATE: open | P2 | medium | security=no
+DEVANA-STATE: fixed | P2 | medium | security=no
 DEVANA-KEY: src/i18n.ts:113-119 | bento-message-default-shadows-fallback
 
 # bentoMessage returns the hardcoded en default for a key even when a later fallback locale carries a user override
@@ -74,6 +74,7 @@ After working this report, preserve the original finding body. Update line 2 `DE
 ## Status Notes
 
 - 2026-06-27: open by Devana. Found via invariants-contracts trail; confirmed by precedence divergence against localizedString on the same chain.
+- 2026-06-27: fixed. Removed the in-loop `locale === DEFAULT_LOCALE` short-circuit in `bentoMessage`. The loop now walks the full fallback chain looking only for user overrides; the built-in en default is resolved after the loop (via the existing `messages.en` check and `DEFAULT_BENTO_I18N.messages.en[key] ?? key`). A fallback that routes through the default locale to a more specific locale (fr -> en -> de) now returns that later locale's override ("Raster") instead of the built-in "Grid", matching `localizedString`'s precedence. Direct en overrides still win in-loop and the built-in default still resolves when no override exists. Added a regression test covering the mid-chain default-locale case plus the unaffected normal cases. Verified: 27/27 tests pass, `tsc --noEmit` clean.
 
 DEVANA-KEY: src/i18n.ts:113-119 | bento-message-default-shadows-fallback
-DEVANA-SUMMARY: Status=open | P2 medium src/i18n.ts:113-119 - The `locale === DEFAULT_LOCALE` short-circuit returns the built-in en default as soon as "en" appears mid-chain, shadowing a later fallback locale's user override that localizedString would honor.
+DEVANA-SUMMARY: Status=fixed | P2 medium src/i18n.ts:113-119 - The `locale === DEFAULT_LOCALE` short-circuit returned the built-in en default as soon as "en" appeared mid-chain, shadowing a later fallback locale's override. Fixed by removing the in-loop short-circuit and resolving the default after the full chain walk, aligning with localizedString.

@@ -110,12 +110,14 @@ export function bentoMessage(
 ): string {
   const config = typeof i18n === "string" ? { locale: i18n } : (i18n ?? {});
 
+  // Walk the full fallback chain for a user override before falling back to the
+  // built-in default. The default locale can sit mid-chain (when `fallback`
+  // routes through it to a more specific locale), so resolving the en default
+  // in-loop would shadow a later fallback locale's override — diverging from
+  // localizedString, which honors those later locales.
   for (const locale of localeFallbacks(config)) {
     const override = config.messages?.[locale]?.[key];
     if (typeof override === "string" && override.length > 0) return override;
-
-    const defaultMessage = DEFAULT_BENTO_I18N.messages.en[key];
-    if (locale === DEFAULT_LOCALE && defaultMessage) return defaultMessage;
   }
 
   const sourceOverride = config.messages?.[DEFAULT_LOCALE]?.[key];

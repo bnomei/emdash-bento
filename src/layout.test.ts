@@ -35,6 +35,26 @@ test("bento messages follow the EmDash-style fallback chain", () => {
   assert.equal(localizedString({ en: "Grid", fr: "Grille" }, i18n), "Grille");
 });
 
+test("bentoMessage honors a fallback locale that routes through the default locale", () => {
+  // The fallback chain routes fr -> en -> de; the built-in en default must not
+  // shadow the later de override, matching localizedString's precedence.
+  const config = {
+    locale: "fr",
+    defaultLocale: "en",
+    fallback: { fr: "en", en: "de" },
+    messages: { de: { grid: "Raster" } },
+  };
+
+  assert.deepEqual(localeFallbacks(config), ["fr", "en", "de"]);
+  assert.equal(bentoMessage("grid", config), "Raster");
+  assert.equal(localizedString({ de: "Raster" }, config), "Raster");
+
+  // A direct en override still wins, and the built-in default still resolves.
+  assert.equal(bentoMessage("grid", { locale: "en", messages: { en: { grid: "Custom" } } }), "Custom");
+  assert.equal(bentoMessage("grid", { locale: "en" }), "Grid");
+  assert.equal(bentoMessage("grid", { locale: "fr" }), "Grid");
+});
+
 test("layoutSpans trims, filters, and falls back to a full-width span", () => {
   assert.deepEqual(layoutSpans(" 1/2, , 1/3 , invalid "), ["1/2", "1/3"]);
   assert.deepEqual(layoutSpans(""), ["1/1"]);
