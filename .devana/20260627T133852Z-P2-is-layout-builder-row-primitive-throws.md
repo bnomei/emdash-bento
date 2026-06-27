@@ -1,5 +1,5 @@
 DEVANA-FINDING: v1
-DEVANA-STATE: open | P2 | high | security=no
+DEVANA-STATE: fixed | P2 | high | security=no
 DEVANA-KEY: src/render.ts:15-18 | is-layout-builder-row-primitive-throws
 
 # isLayoutBuilderRow throws TypeError when a row's columns[0] is a non-null primitive
@@ -66,6 +66,7 @@ After working this report, preserve the original finding body. Update line 2 `DE
 ## Status Notes
 
 - 2026-06-27: open by Devana. Found via outside-in-entrypoints trail; `in`-operator throw on primitive confirmed at runtime.
+- 2026-06-27: fixed. Resolved as part of the [is-layout-builder-row-span-gap] rewrite of `isLayoutBuilderRow`, which replaced `"span" in (columns[0] ?? {})` with `columns.some((column) => isRecord(column) && "span" in column)`. The per-column `isRecord` guard means the `in` operator is never applied to a primitive, so the predicate is now total over `unknown` and returns `false` for `{ columns: ["x"] }`, `{ columns: [0] }`, `{ columns: [true] }`, etc. Added these exact counterexamples (no `layout` key, primitive `columns[0]`, no `id`) as explicit non-throwing/false assertions in src/layout.test.ts. Verified: 26/26 tests pass, `tsc --noEmit` clean.
 
 DEVANA-KEY: src/render.ts:15-18 | is-layout-builder-row-primitive-throws
-DEVANA-SUMMARY: Status=open | P2 high src/render.ts:15-18 - isLayoutBuilderRow throws TypeError on a row whose columns[0] is a non-null primitive because the `?? {}` fallback only guards nullish values before `"span" in ...`.
+DEVANA-SUMMARY: Status=fixed | P2 high src/render.ts:15-18 - isLayoutBuilderRow threw TypeError on a row whose columns[0] was a non-null primitive. Fixed by the span-gap rewrite guarding each column with isRecord before the `in` check; predicate is now total over unknown.

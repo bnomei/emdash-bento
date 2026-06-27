@@ -335,4 +335,10 @@ test("isLayoutBuilderRow detects span on any column, not just the first", () => 
   // Primitive column entries must not throw on the `in` check.
   assert.doesNotThrow(() => isLayoutBuilderRow({ id: "row-1", columns: ["x", 1, null] }));
   assert.equal(isLayoutBuilderRow({ id: "row-1", columns: ["x", 1, null] }), false);
+  // A record with no layout key whose columns[0] is a non-null primitive
+  // (no id either) must return false, not throw `'span' in <primitive>`.
+  for (const columns of [["x"], [0], [true], ["a", "b"]]) {
+    assert.doesNotThrow(() => isLayoutBuilderRow({ columns }));
+    assert.equal(isLayoutBuilderRow({ columns }), false);
+  }
 });
