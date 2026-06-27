@@ -13,8 +13,12 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 export { layoutSpans, spanToGridColumns } from "./layout.js";
 
 export function isLayoutBuilderRow(value: unknown): value is LayoutBuilderRow {
-  const columns = isRecord(value) && Array.isArray(value.columns) ? value.columns : [];
-  return isRecord(value) && ("layout" in value || "span" in (columns[0] ?? {}));
+  if (!isRecord(value)) return false;
+  if ("layout" in value) return true;
+  // Scan every column for a span, not just columns[0]: legacy rows may carry
+  // span only on a later column, which normalizeLayoutRow still accepts.
+  const columns = Array.isArray(value.columns) ? value.columns : [];
+  return columns.some((column) => isRecord(column) && "span" in column);
 }
 
 function normalizeLayoutColumn(

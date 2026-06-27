@@ -1,5 +1,5 @@
 DEVANA-FINDING: v1
-Priority: P2 | Confidence: high | Security-sensitive: no | Status: open
+Priority: P2 | Confidence: high | Security-sensitive: no | Status: fixed
 Location: src/render.ts:15-18 | Slug: is-layout-builder-row-span-gap
 
 # isLayoutBuilderRow misses span on non-first columns
@@ -60,6 +60,7 @@ After working this report, preserve the original finding body. Update line 2 `St
 ## Status Notes
 
 - 2026-06-25: open by Devana. Initial report written from static source inspection.
+- 2026-06-27: fixed. `isLayoutBuilderRow` now scans every column for a `span` (`columns.some((column) => isRecord(column) && "span" in column)`) instead of inspecting only `columns[0]`, so legacy rows whose span lives on a later column are recognized consistently with what `normalizeLayoutRow` accepts. The per-column `isRecord` guard also makes the `in` check safe against primitive column entries. Added regression tests for span on a non-first column, the negative cases, and primitive columns. Verified: 22/22 tests pass, `tsc --noEmit` clean.
 
 DEVANA-KEY: src/render.ts:15-18 | P2 | is-layout-builder-row-span-gap
-DEVANA-SUMMARY: Status=open | P2 high src/render.ts:15-18 - isLayoutBuilderRow only checks columns[0] for span, so legacy rows with span on later columns are misclassified.
+DEVANA-SUMMARY: Status=fixed | P2 high src/render.ts:15-18 - isLayoutBuilderRow only checked columns[0] for span. Fixed by scanning all columns (with an isRecord guard per column) so rows with span on later columns are detected.

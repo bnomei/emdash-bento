@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  isLayoutBuilderRow,
   layoutSpans,
   normalizeLayoutRow,
   normalizeLayoutRows,
@@ -231,4 +232,25 @@ test("normalizeLayoutRows tolerates null and primitive holes without throwing", 
   assert.equal(rows[0]?.columns.length, 1);
   assert.equal(rows[1]?.id, "layout-1");
   assert.doesNotThrow(() => visibleLayoutRows([null as unknown as LayoutBuilderRow]));
+});
+
+test("isLayoutBuilderRow detects span on any column, not just the first", () => {
+  assert.equal(isLayoutBuilderRow({ id: "row-1", layout: "1/1" }), true);
+  assert.equal(
+    isLayoutBuilderRow({
+      id: "row-1",
+      columns: [
+        { id: "c1", blocks: [] },
+        { id: "c2", span: "1/2", blocks: [] },
+      ],
+    }),
+    true,
+  );
+  // No layout key and no span on any column → not a layout row.
+  assert.equal(isLayoutBuilderRow({ id: "row-1", columns: [{ id: "c1", blocks: [] }] }), false);
+  assert.equal(isLayoutBuilderRow({ foo: "bar" }), false);
+  assert.equal(isLayoutBuilderRow(null), false);
+  // Primitive column entries must not throw on the `in` check.
+  assert.doesNotThrow(() => isLayoutBuilderRow({ id: "row-1", columns: ["x", 1, null] }));
+  assert.equal(isLayoutBuilderRow({ id: "row-1", columns: ["x", 1, null] }), false);
 });
