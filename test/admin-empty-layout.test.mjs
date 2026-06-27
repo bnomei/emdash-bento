@@ -24,6 +24,13 @@ test("blurring an invalid layout pattern falls back to the current layout", () =
   assert.match(source, /fallbackLayout=\{row\.layout \|\| columnsToLayout\(row\.columns\)\}/);
 });
 
+test("a singleton row object is coerced into an editable row, not empty state", () => {
+  // asLayouts must wrap a non-array layout-row object so a migration mistake
+  // is editable instead of silently empty (and overwritten on next save).
+  assert.match(source, /isLayoutBuilderRow\(value\) \? \[value\] : \[\]/);
+  assert.match(source, /import \{ isLayoutBuilderRow \} from "\.\/render"/);
+});
+
 test("layout draft is not overwritten while the field is focused", () => {
   // Same-row structural edits change row.layout (the value prop); the draft
   // sync effect must be guarded by focus so uncommitted text is not reverted.

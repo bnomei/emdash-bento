@@ -1,5 +1,5 @@
 DEVANA-FINDING: v1
-Priority: P1 | Confidence: high | Security-sensitive: no | Status: open
+Priority: P1 | Confidence: high | Security-sensitive: no | Status: fixed
 Location: src/admin.tsx:246-248,src/render.ts:62-64 | Slug: non-array-layout-value-mishandled
 
 # Non-array layout values silently empty in admin and crash in render
@@ -54,6 +54,7 @@ After working this report, preserve the original finding body. Update line 2 `St
 ## Status Notes
 
 - 2026-06-25: open by Devana. Initial report written from static source inspection.
+- 2026-06-27: fixed. Added a shared `asLayoutRows` helper in src/render.ts that returns the array as-is, wraps a singleton object in a one-element array when `isLayoutBuilderRow` recognizes it, and otherwise returns `[]`. `normalizeLayoutRows`/`visibleLayoutRows` now route through it (no more `.map` on a non-array). Admin `asLayouts` applies the same coercion via the imported `isLayoutBuilderRow`, so a singleton row renders as an editable row instead of an empty state that the next save would overwrite. Non-row objects still normalize to `[]` in both paths. Added runtime + source regression tests. Verified: 18/18 tests pass, `tsc --noEmit` clean.
 
 DEVANA-KEY: src/admin.tsx:246-248,src/render.ts:62-64 | P1 | non-array-layout-value-mishandled
-DEVANA-SUMMARY: Status=open | P1 high src/admin.tsx:246-248,src/render.ts:62-64 - A singleton layout object is treated as empty in admin but crashes normalizeLayoutRows, and the next admin save can overwrite it.
+DEVANA-SUMMARY: Status=fixed | P1 high src/admin.tsx:246-248,src/render.ts:62-64 - A singleton layout object was treated as empty in admin but crashed normalizeLayoutRows. Fixed by coercing a recognized singleton row into a one-element array in both the admin and render ingest paths.

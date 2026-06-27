@@ -190,3 +190,23 @@ test("empty layout values stay empty until user action supplies rows", () => {
 
   assert.deepEqual(normalizeLayoutRows([userAddedRow]), [userAddedRow]);
 });
+
+test("normalizeLayoutRows tolerates a singleton row object persisted without an array", () => {
+  const singleton = {
+    id: "hero",
+    layout: "1/2, 1/2",
+    columns: [
+      { id: "c1", span: "1/2", blocks: [] },
+      { id: "c2", span: "1/2", blocks: [] },
+    ],
+  } as unknown as LayoutBuilderRow;
+
+  const rows = normalizeLayoutRows(singleton);
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0]?.id, "hero");
+  assert.equal(rows[0]?.columns.length, 2);
+  assert.equal(visibleLayoutRows(singleton).length, 1);
+
+  // A non-row object is still treated as empty rather than wrapped.
+  assert.deepEqual(normalizeLayoutRows({ foo: "bar" } as unknown as LayoutBuilderRow), []);
+});

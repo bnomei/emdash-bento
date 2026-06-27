@@ -12,6 +12,7 @@ import type { CSSProperties, ChangeEvent } from "react";
 import { BlocksField } from "@bnomei/emdash-blocks/admin";
 import type { BlockBuilderBlock, BlockBuilderValue } from "@bnomei/emdash-blocks";
 import { useAdminLocale } from "./admin-locale";
+import { isLayoutBuilderRow } from "./render";
 import { bentoMessage, formatBentoMessage, localizedString, type BentoI18nConfig } from "./i18n";
 import {
   DEFAULT_LAYOUT_PATTERN,
@@ -244,7 +245,11 @@ function normalizeRow(value: unknown, rowIndex: number): LayoutBuilderRow {
 }
 
 function asLayouts(value: unknown): LayoutBuilderValue {
-  return Array.isArray(value) ? value.map((item, index) => normalizeRow(item, index)) : [];
+  // Tolerate a singleton row object persisted where an array was expected so
+  // a migration mistake surfaces as an editable row instead of an empty state
+  // that the next save would overwrite.
+  const rows = Array.isArray(value) ? value : isLayoutBuilderRow(value) ? [value] : [];
+  return rows.map((item, index) => normalizeRow(item, index));
 }
 
 function compactControlWidth(values: string[], min = 8, max = 42) {

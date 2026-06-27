@@ -59,10 +59,22 @@ export function normalizeLayoutRow(layout: LayoutBuilderRow, rowIndex = 0): Layo
   };
 }
 
-export function normalizeLayoutRows(layouts?: LayoutBuilderValue | null): LayoutBuilderValue {
-  return (layouts ?? []).map((layout, rowIndex) => normalizeLayoutRow(layout, rowIndex));
+export function asLayoutRows(value?: LayoutBuilderValue | LayoutBuilderRow | null): LayoutBuilderValue {
+  if (Array.isArray(value)) return value;
+  // Tolerate a singleton row object persisted where an array was expected
+  // (e.g. a migration that stored one row instead of [row]) instead of
+  // throwing in render or silently discarding it in admin.
+  return isLayoutBuilderRow(value) ? [value] : [];
 }
 
-export function visibleLayoutRows(layouts?: LayoutBuilderValue | null): LayoutBuilderValue {
+export function normalizeLayoutRows(
+  layouts?: LayoutBuilderValue | LayoutBuilderRow | null,
+): LayoutBuilderValue {
+  return asLayoutRows(layouts).map((layout, rowIndex) => normalizeLayoutRow(layout, rowIndex));
+}
+
+export function visibleLayoutRows(
+  layouts?: LayoutBuilderValue | LayoutBuilderRow | null,
+): LayoutBuilderValue {
   return normalizeLayoutRows(layouts).filter((layout) => Array.isArray(layout.columns));
 }
