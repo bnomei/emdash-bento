@@ -1,5 +1,5 @@
 DEVANA-FINDING: v1
-DEVANA-STATE: open | P2 | medium | security=no
+DEVANA-STATE: fixed | P2 | medium | security=no
 DEVANA-KEY: src/admin.tsx:206-209,239,444,489 | react-key-id-collision-state-bleed
 
 # Synthesized positional row/column ids can collide with stored ids, producing duplicate React keys and editor state bleed
@@ -68,6 +68,7 @@ After working this report, preserve the original finding body. Update line 2 `DE
 ## Status Notes
 
 - 2026-06-27: open by Devana. Found via state-lifecycle trail; confirmed no id-uniqueness pass exists in admin normalization.
+- 2026-06-27: fixed. Added a deterministic uniqueness pass in admin `asLayouts`: a `uniqueId(id, index, seen)` helper dedupes row ids against a global `Set` and each row's column ids against a per-row `Set`, deriving a stable `${id}-${index + 1}-${attempt}` id on collision. This prevents a stored id (e.g. a row literally id'd "layout-2") from colliding with a sibling's synthesized positional id (`layout-${1 + 1}`), which previously produced duplicate `key={row.id}` / `key={column.id}` values and bled `LayoutPatternField`/`BlocksField` per-instance state across cards. The uniquifier is deterministic (not `randomId`), so resolved ids stay stable across re-renders, preserving the [synthetic-column-ids-unstable] fix. Scope is the admin React keys named in the finding; the non-React render path is unchanged. Added source regression assertions. Verified: 28/28 tests pass, `tsc --noEmit` clean.
 
 DEVANA-KEY: src/admin.tsx:206-209,239,444,489 | react-key-id-collision-state-bleed
-DEVANA-SUMMARY: Status=open | P2 medium src/admin.tsx:206-209,239,444,489 - Positional synthesized ids (`layout-N`, `layout-R-column-C`) can equal a sibling's stored id, producing duplicate React keys and per-instance editor state bleed.
+DEVANA-SUMMARY: Status=fixed | P2 medium src/admin.tsx:206-209,239,444,489 - Positional synthesized ids could equal a sibling's stored id, producing duplicate React keys and editor state bleed. Fixed with a deterministic per-render uniqueness pass over row ids (global) and column ids (per row) in asLayouts.

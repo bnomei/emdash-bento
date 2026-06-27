@@ -49,6 +49,19 @@ test("a singleton row object is coerced into an editable row, not empty state", 
   assert.match(source, /import \{[^}]*isLayoutBuilderRow[^}]*\} from "\.\/render"/);
 });
 
+test("row and column ids are de-duplicated to avoid duplicate React keys", () => {
+  // A stored id can equal a sibling's synthesized positional id; asLayouts must
+  // run a deterministic uniqueness pass so key={row.id}/key={column.id} stay
+  // unique. The uniquifier must be deterministic (not randomId) to stay stable.
+  assert.match(source, /function uniqueId\(id: string, index: number, seen: Set<string>\)/);
+  assert.match(source, /const seenRowIds = new Set<string>\(\)/);
+  assert.match(source, /const seenColumnIds = new Set<string>\(\)/);
+  assert.match(source, /const id = uniqueId\(row\.id, index, seenRowIds\)/);
+  assert.match(source, /const columnId = uniqueId\(column\.id, columnIndex, seenColumnIds\)/);
+  // The dedup pass must not reintroduce randomId (would remount on every render).
+  assert.doesNotMatch(source, /uniqueId\([^)]*randomId/);
+});
+
 test("a singleton block object on a column is coerced, not emptied", () => {
   // admin normalizeBlocks must wrap a singleton block object via the shared
   // asBlocksArray helper instead of returning [] for any non-array value.

@@ -250,12 +250,41 @@ function normalizeRow(value: unknown, rowIndex: number): LayoutBuilderRow {
   };
 }
 
+function uniqueId(id: string, index: number, seen: Set<string>): string {
+  // Deterministic so the resolved id is stable across re-renders for the same
+  // input (avoids the remount issue randomId would reintroduce). The index makes
+  // the derived id position-specific; the attempt counter guards the rare case
+  // where the derived id also collides with a sibling's stored id.
+  let candidate = id;
+  let attempt = 1;
+  while (seen.has(candidate)) {
+    candidate = `${id}-${index + 1}-${attempt}`;
+    attempt += 1;
+  }
+  seen.add(candidate);
+  return candidate;
+}
+
 function asLayouts(value: unknown): LayoutBuilderValue {
   // Tolerate a singleton row object persisted where an array was expected so
   // a migration mistake surfaces as an editable row instead of an empty state
   // that the next save would overwrite.
   const rows = Array.isArray(value) ? value : isLayoutBuilderRow(value) ? [value] : [];
-  return rows.map((item, index) => normalizeRow(item, index));
+  // A stored id can equal a sibling's synthesized positional id (e.g. a row
+  // id'd "layout-2" next to an id-less row at index 1). Those become React keys
+  // (`key={row.id}` / `key={column.id}`), so dedupe row ids globally and column
+  // ids per row to prevent duplicate-key state bleed across editor cards.
+  const seenRowIds = new Set<string>();
+  return rows.map((item, index) => {
+    const row = normalizeRow(item, index);
+    const id = uniqueId(row.id, index, seenRowIds);
+    const seenColumnIds = new Set<string>();
+    const columns = row.columns.map((column, columnIndex) => {
+      const columnId = uniqueId(column.id, columnIndex, seenColumnIds);
+      return columnId === column.id ? column : { ...column, id: columnId };
+    });
+    return { ...row, id, columns };
+  });
 }
 
 function compactControlWidth(values: string[], min = 8, max = 42) {
