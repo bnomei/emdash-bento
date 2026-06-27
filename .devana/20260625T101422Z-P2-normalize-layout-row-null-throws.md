@@ -1,5 +1,5 @@
 DEVANA-FINDING: v1
-Priority: P2 | Confidence: high | Security-sensitive: no | Status: open
+Priority: P2 | Confidence: high | Security-sensitive: no | Status: fixed
 Location: src/render.ts:35-38 | Slug: normalize-layout-row-null-throws
 
 # normalizeLayoutRow throws on null array elements
@@ -55,6 +55,7 @@ After working this report, preserve the original finding body. Update line 2 `St
 ## Status Notes
 
 - 2026-06-25: open by Devana. Initial report written from static source inspection.
+- 2026-06-27: fixed. `normalizeLayoutRow` now coerces its argument via the existing `isRecord` guard (`const row = isRecord(layout) ? layout : {}`) before any property access, so null/undefined/primitive holes in the layouts array no longer throw. Holes synthesize a default single-column row, matching the admin `asRecord` path. All reads (`row.columns`, `row.layout`, `row.id`) and the spread use the coerced record. Added a runtime regression test covering `normalizeLayoutRows([good, null])`, primitives, and `visibleLayoutRows([null])`. Verified: 21/21 tests pass, `tsc --noEmit` clean. (Null *column* entries are tracked separately by normalize-layout-column-null-throws.)
 
 DEVANA-KEY: src/render.ts:35-38 | P2 | normalize-layout-row-null-throws
-DEVANA-SUMMARY: Status=open | P2 high src/render.ts:35-38 - null entries in a layouts array crash normalizeLayoutRows while admin normalization synthesizes a default row.
+DEVANA-SUMMARY: Status=fixed | P2 high src/render.ts:35-38 - null entries in a layouts array crashed normalizeLayoutRows. Fixed by coercing non-object rows via isRecord, matching the admin normalization path.

@@ -210,3 +210,25 @@ test("normalizeLayoutRows tolerates a singleton row object persisted without an 
   // A non-row object is still treated as empty rather than wrapped.
   assert.deepEqual(normalizeLayoutRows({ foo: "bar" } as unknown as LayoutBuilderRow), []);
 });
+
+test("normalizeLayoutRows tolerates null and primitive holes without throwing", () => {
+  const good: LayoutBuilderRow = {
+    id: "layout-1",
+    layout: "1/1",
+    columns: [{ id: "layout-1-column-1", span: "1/1", blocks: [] }],
+  };
+
+  assert.doesNotThrow(() =>
+    normalizeLayoutRows([good, null as unknown as LayoutBuilderRow]),
+  );
+  const rows = normalizeLayoutRows([
+    null as unknown as LayoutBuilderRow,
+    good,
+    "x" as unknown as LayoutBuilderRow,
+  ]);
+  assert.equal(rows.length, 3);
+  // Null/primitive holes become synthesized default rows, matching admin.
+  assert.equal(rows[0]?.columns.length, 1);
+  assert.equal(rows[1]?.id, "layout-1");
+  assert.doesNotThrow(() => visibleLayoutRows([null as unknown as LayoutBuilderRow]));
+});

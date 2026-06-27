@@ -33,13 +33,17 @@ function normalizeLayoutColumn(
 }
 
 export function normalizeLayoutRow(layout: LayoutBuilderRow, rowIndex = 0): LayoutBuilderRow {
-  const storedColumns = Array.isArray(layout.columns) ? layout.columns : [];
+  // Tolerate messy persisted JSON (null/undefined/primitive holes in the
+  // layouts array) the same way the admin path does, rather than throwing on
+  // a property access and aborting the render.
+  const row = (isRecord(layout) ? layout : {}) as Partial<LayoutBuilderRow>;
+  const storedColumns = Array.isArray(row.columns) ? row.columns : [];
   const normalizedColumns = storedColumns.map((column, columnIndex) =>
     normalizeLayoutColumn(column, rowIndex, columnIndex),
   );
   const layoutPattern =
-    typeof layout.layout === "string" && layout.layout.trim()
-      ? normalizeLayoutPattern(layout.layout)
+    typeof row.layout === "string" && row.layout.trim()
+      ? normalizeLayoutPattern(row.layout)
       : columnsToLayout(normalizedColumns);
   const columns = layoutColumnsPreservingExisting(
     layoutPattern,
@@ -52,8 +56,8 @@ export function normalizeLayoutRow(layout: LayoutBuilderRow, rowIndex = 0): Layo
   );
 
   return {
-    ...layout,
-    id: typeof layout.id === "string" && layout.id ? layout.id : `layout-${rowIndex + 1}`,
+    ...row,
+    id: typeof row.id === "string" && row.id ? row.id : `layout-${rowIndex + 1}`,
     layout: columnsToLayout(columns),
     columns,
   };
