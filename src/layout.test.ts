@@ -36,8 +36,6 @@ test("bento messages follow the EmDash-style fallback chain", () => {
 });
 
 test("bentoMessage honors a fallback locale that routes through the default locale", () => {
-  // The fallback chain routes fr -> en -> de; the built-in en default must not
-  // shadow the later de override, matching localizedString's precedence.
   const config = {
     locale: "fr",
     defaultLocale: "en",
@@ -49,7 +47,6 @@ test("bentoMessage honors a fallback locale that routes through the default loca
   assert.equal(bentoMessage("grid", config), "Raster");
   assert.equal(localizedString({ de: "Raster" }, config), "Raster");
 
-  // A direct en override still wins, and the built-in default still resolves.
   assert.equal(bentoMessage("grid", { locale: "en", messages: { en: { grid: "Custom" } } }), "Custom");
   assert.equal(bentoMessage("grid", { locale: "en" }), "Grid");
   assert.equal(bentoMessage("grid", { locale: "fr" }), "Grid");
@@ -91,22 +88,17 @@ test("spanToGridColumns clamps or falls back for edge cases", () => {
 test("layoutGridSpans keeps full-width rows on one 12-column grid line", () => {
   const sum = (spans: number[]) => spans.reduce((total, value) => total + value, 0);
 
-  // Seven 1/7 columns sum to exactly 1/1 and must total 12 (no false wrap),
-  // unlike per-span rounding which would yield 7 x 2 = 14.
   const sevens = layoutGridSpans(Array(7).fill("1/7"));
   assert.equal(sum(sevens), 12);
   assert.ok(sevens.every((value) => value >= 1));
 
-  // Eight 1/8 columns: per-span rounding gives 16; allocation gives 12.
   assert.equal(sum(layoutGridSpans(Array(8).fill("1/8"))), 12);
 
-  // Common patterns are unchanged.
   assert.deepEqual(layoutGridSpans(["1/2", "1/2"]), [6, 6]);
   assert.deepEqual(layoutGridSpans(["1/3", "1/3", "1/3"]), [4, 4, 4]);
   assert.deepEqual(layoutGridSpans(["1/2", "1/3", "1/6"]), [6, 4, 2]);
   assert.deepEqual(layoutGridSpans(["1/2"]), [6]);
 
-  // Rows whose fractions sum to more than 1/1 still wrap (per-span rounding).
   assert.deepEqual(layoutGridSpans(["1/1", "1/1"]), [12, 12]);
   assert.equal(sum(layoutGridSpans(["1/2", "1/2", "1/2"])), 18);
 
@@ -258,7 +250,6 @@ test("normalizeLayoutRows tolerates a singleton row object persisted without an 
   assert.equal(rows[0]?.columns.length, 2);
   assert.equal(visibleLayoutRows(singleton).length, 1);
 
-  // A non-row object is still treated as empty rather than wrapped.
   assert.deepEqual(normalizeLayoutRows({ foo: "bar" } as unknown as LayoutBuilderRow), []);
 });
 
@@ -278,7 +269,6 @@ test("normalizeLayoutRows tolerates null and primitive holes without throwing", 
     "x" as unknown as LayoutBuilderRow,
   ]);
   assert.equal(rows.length, 3);
-  // Null/primitive holes become synthesized default rows, matching admin.
   assert.equal(rows[0]?.columns.length, 1);
   assert.equal(rows[1]?.id, "layout-1");
   assert.doesNotThrow(() => visibleLayoutRows([null as unknown as LayoutBuilderRow]));
@@ -294,7 +284,6 @@ test("normalizeLayoutRow tolerates null/primitive column holes without throwing"
   assert.doesNotThrow(() => normalizeLayoutRow(stored));
   const row = normalizeLayoutRow(stored);
   assert.equal(row.columns.length, 2);
-  // Null hole becomes a synthesized default column, matching admin.
   assert.equal(row.columns[0]?.id, "layout-1-column-1");
   assert.equal(row.columns[1]?.id, "c2");
   assert.doesNotThrow(() =>
@@ -327,7 +316,6 @@ test("normalizeLayoutRow preserves a singleton block object on a column", () => 
   assert.equal(row.columns[0]?.blocks[0]?.id, "headline");
   assert.equal(row.columns[0]?.blocks[0]?.type, "text");
 
-  // Null/undefined blocks still normalize to [] in both directions.
   const empty = {
     id: "r",
     layout: "1/1",
@@ -348,15 +336,11 @@ test("isLayoutBuilderRow detects span on any column, not just the first", () => 
     }),
     true,
   );
-  // No layout key and no span on any column → not a layout row.
   assert.equal(isLayoutBuilderRow({ id: "row-1", columns: [{ id: "c1", blocks: [] }] }), false);
   assert.equal(isLayoutBuilderRow({ foo: "bar" }), false);
   assert.equal(isLayoutBuilderRow(null), false);
-  // Primitive column entries must not throw on the `in` check.
   assert.doesNotThrow(() => isLayoutBuilderRow({ id: "row-1", columns: ["x", 1, null] }));
   assert.equal(isLayoutBuilderRow({ id: "row-1", columns: ["x", 1, null] }), false);
-  // A record with no layout key whose columns[0] is a non-null primitive
-  // (no id either) must return false, not throw `'span' in <primitive>`.
   for (const columns of [["x"], [0], [true], ["a", "b"]]) {
     assert.doesNotThrow(() => isLayoutBuilderRow({ columns }));
     assert.equal(isLayoutBuilderRow({ columns }), false);

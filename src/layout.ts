@@ -1,5 +1,13 @@
+/**
+ * Layout pattern parsing and column allocation for fractional bento spans.
+ *
+ * Spans use `numerator/denominator` fractions (denominator ≤ 12). Helpers here
+ * validate patterns, derive columns from a pattern string, and map spans onto
+ * a 12-column CSS grid without false wrapping on equal-width rows.
+ */
 import type { LayoutBuilderColumn } from "./types.js";
 
+/** Full-width span used when a pattern is empty or contains no valid fractions. */
 export const DEFAULT_LAYOUT_PATTERN = "1/1";
 
 type SpanParts = {
@@ -7,6 +15,7 @@ type SpanParts = {
   denominator: number;
 };
 
+/** Factory invoked when a layout pattern implies more columns than are stored. */
 export type LayoutColumnFactory = (index: number, span: string) => LayoutBuilderColumn;
 
 function parseSpan(span?: string): SpanParts | null {
@@ -21,6 +30,7 @@ function parseSpan(span?: string): SpanParts | null {
   return { numerator, denominator };
 }
 
+/** Returns whether `span` is a positive fraction with denominator between 1 and 12. */
 export function isValidLayoutSpan(span: string): boolean {
   const parts = parseSpan(span);
 
@@ -33,6 +43,7 @@ export function isValidLayoutSpan(span: string): boolean {
   );
 }
 
+/** Extracts valid spans from a comma-separated layout pattern, dropping invalid tokens. */
 export function validLayoutSpans(layout?: string | null): string[] {
   return (layout ?? "")
     .split(",")
@@ -46,11 +57,17 @@ function normalizeLayoutSpan(span?: string | null): string {
   return isValidLayoutSpan(trimmed) ? trimmed : DEFAULT_LAYOUT_PATTERN;
 }
 
+/** Parsed spans for a layout pattern, falling back to `DEFAULT_LAYOUT_PATTERN` when empty. */
 export function layoutSpans(layout?: string | null): string[] {
   const spans = validLayoutSpans(layout);
   return spans.length ? spans : [DEFAULT_LAYOUT_PATTERN];
 }
 
+/**
+ * Normalizes a layout pattern to valid comma-separated spans.
+ *
+ * Invalid or empty input uses `fallbackLayout`; a blank fallback yields `""`.
+ */
 export function normalizeLayoutPattern(
   layout?: string | null,
   fallbackLayout = DEFAULT_LAYOUT_PATTERN,
@@ -64,6 +81,7 @@ export function normalizeLayoutPattern(
   return (fallbackSpans.length ? fallbackSpans : [DEFAULT_LAYOUT_PATTERN]).join(", ");
 }
 
+/** Builds a layout pattern string from stored column spans. */
 export function columnsToLayout(
   columns: readonly Pick<LayoutBuilderColumn, "span">[] = [],
   fallbackLayout = DEFAULT_LAYOUT_PATTERN,
@@ -73,6 +91,7 @@ export function columnsToLayout(
     : normalizeLayoutPattern(fallbackLayout);
 }
 
+/** Maps one fractional span to a 1–12 CSS grid column count via independent rounding. */
 export function spanToGridColumns(span?: string): number {
   const parts = parseSpan(span);
 
@@ -92,15 +111,11 @@ function spanFraction(span?: string): number {
 }
 
 /**
- * Allocate 12-column grid widths across a row of spans.
+ * Row-aware 12-column grid widths that avoid false wrapping on full-width rows.
  *
- * Per-span `Math.round` overflows the grid for equal-width patterns whose
- * fractions sum to exactly 1/1 (e.g. seven 1/7 columns round to 2 each = 14 > 12)
- * and wraps them even though the row is not wider than a full line. When the
- * fractional total is <= 1 this distributes `round(total * 12)` units with a
- * largest-remainder method so the row never exceeds 12 and does not wrap. Rows
- * whose fractions sum to more than 1/1 keep per-span rounding so they still wrap
- * as documented.
+ * When fractional spans sum to at most one line, distributes `round(total × 12)`
+ * units with largest-remainder rounding. Rows wider than one line keep per-span
+ * `spanToGridColumns` rounding so intentional overflow still wraps.
  */
 export function layoutGridSpans(spans: readonly string[]): number[] {
   if (!spans.length) return [];
@@ -126,9 +141,7 @@ export function layoutGridSpans(spans: readonly string[]): number[] {
     remaining -= 1;
   }
 
-  // Never emit a 0-unit span (invalid CSS grid). Pathological rows with more
-  // columns than the 12-unit target (e.g. thirteen 1/13) then exceed 12 and
-  // wrap, which is unavoidable.
+  // Each column needs at least one grid unit; rows with more columns than units wrap.
   return result.map((value) => Math.max(1, value));
 }
 
@@ -140,6 +153,7 @@ function defaultLayoutColumn(index: number, span: string): LayoutBuilderColumn {
   };
 }
 
+/** Materializes columns for a layout pattern, reusing stored columns by index. */
 export function layoutColumns(
   layout: string,
   existingColumns: readonly LayoutBuilderColumn[] = [],
@@ -156,6 +170,7 @@ export function layoutColumns(
   });
 }
 
+/** Like `layoutColumns`, but keeps extra stored columns beyond the parsed pattern. */
 export function layoutColumnsPreservingExisting(
   layout: string,
   existingColumns: readonly LayoutBuilderColumn[] = [],

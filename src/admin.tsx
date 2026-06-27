@@ -1,3 +1,10 @@
+/**
+ * EmDash admin field widget for editing bento layout JSON.
+ *
+ * Renders rows and columns on a 12-column preview grid, embeds block builders
+ * per column, and persists plain JSON. Empty fields stay `[]` until the editor
+ * adds the first row; normalization tolerates legacy singleton rows and blocks.
+ */
 import { Button, Input, MenuBar, Select } from "@cloudflare/kumo";
 import {
   ArrowDownIcon,
@@ -195,8 +202,6 @@ function normalizeBlock(value: unknown, index: number): BlockBuilderBlock {
 }
 
 function normalizeBlocks(value: unknown): BlockBuilderValue {
-  // Wrap a singleton block object into a one-element array (matching render's
-  // asBlocksArray) so it is preserved and editable instead of silently emptied.
   return asBlocksArray(value).map((item, index) => normalizeBlock(item, index));
 }
 
@@ -232,9 +237,6 @@ function normalizeRow(value: unknown, rowIndex: number): LayoutBuilderRow {
   const columns = layoutColumnsPreservingExisting(
     layoutPattern,
     existingColumns,
-    // Deterministic IDs (matching normalizeColumn and render's normalizeLayoutRow)
-    // so columns implied by the layout pattern keep a stable identity across
-    // re-renders before the first save; randomId would remount their editors.
     (columnIndex, span) => ({
       id: `layout-${rowIndex + 1}-column-${columnIndex + 1}`,
       span,
@@ -250,11 +252,8 @@ function normalizeRow(value: unknown, rowIndex: number): LayoutBuilderRow {
   };
 }
 
+// Stored ids can collide with positional ids used as React keys; dedupe deterministically.
 function uniqueId(id: string, index: number, seen: Set<string>): string {
-  // Deterministic so the resolved id is stable across re-renders for the same
-  // input (avoids the remount issue randomId would reintroduce). The index makes
-  // the derived id position-specific; the attempt counter guards the rare case
-  // where the derived id also collides with a sibling's stored id.
   let candidate = id;
   let attempt = 1;
   while (seen.has(candidate)) {
@@ -266,14 +265,7 @@ function uniqueId(id: string, index: number, seen: Set<string>): string {
 }
 
 function asLayouts(value: unknown): LayoutBuilderValue {
-  // Tolerate a singleton row object persisted where an array was expected so
-  // a migration mistake surfaces as an editable row instead of an empty state
-  // that the next save would overwrite.
   const rows = Array.isArray(value) ? value : isLayoutBuilderRow(value) ? [value] : [];
-  // A stored id can equal a sibling's synthesized positional id (e.g. a row
-  // id'd "layout-2" next to an id-less row at index 1). Those become React keys
-  // (`key={row.id}` / `key={column.id}`), so dedupe row ids globally and column
-  // ids per row to prevent duplicate-key state bleed across editor cards.
   const seenRowIds = new Set<string>();
   return rows.map((item, index) => {
     const row = normalizeRow(item, index);
@@ -337,9 +329,7 @@ function LayoutPatternField({
   const isFocused = useRef(false);
 
   useEffect(() => {
-    // Don't overwrite an in-progress draft while the field is focused; same-row
-    // structural edits (add/remove/move column, span change) mutate row.layout
-    // and would otherwise revert the user's uncommitted text before blur.
+    // Structural row edits change `value` while the editor is typing; skip draft reset until blur.
     if (isFocused.current) return;
     setDraft(value);
   }, [value]);
@@ -389,6 +379,7 @@ function BlocksMiniEditor({
   );
 }
 
+/** Primary `bento:layouts` field widget: row/column editor with nested block fields. */
 export function LayoutsField({
   value,
   onChange,
@@ -457,12 +448,7 @@ export function LayoutsField({
         </div>
       ) : null}
       {layouts.map((row, rowIndex) => {
-        // Row-level grid allocation so equal-width patterns whose fractions sum
-        // to 1/1 (e.g. seven 1/7) do not overflow 12 units and wrap.
         const rowGridSpans = layoutGridSpans(row.columns.map((column) => column.span));
-        // Move options self-gate by position; the remove option is always
-        // present so the last remaining row can still be removed, returning
-        // the field to the documented empty `[]` state.
         const layoutMenuOptions = [
           ...(rowIndex > 0
             ? [
@@ -703,6 +689,7 @@ export function LayoutsField({
   );
 }
 
+/** EmDash admin field widget registry (`bento:layouts` maps to `LayoutsField`). */
 export const fields = {
   layouts: LayoutsField,
 };

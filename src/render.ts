@@ -1,3 +1,9 @@
+/**
+ * Frontend normalization for persisted bento layout JSON.
+ *
+ * Coerces migration mistakes (singleton rows/blocks, null holes) into stable
+ * row and column shapes before Astro renderers map spans onto the 12-column grid.
+ */
 import { normalizeBlocks } from "@bnomei/emdash-blocks";
 import {
   columnsToLayout,
@@ -12,20 +18,17 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 export { layoutGridSpans, layoutSpans, spanToGridColumns } from "./layout.js";
 
+/** Type guard for a layout row object, including legacy rows with span only on later columns. */
 export function isLayoutBuilderRow(value: unknown): value is LayoutBuilderRow {
   if (!isRecord(value)) return false;
   if ("layout" in value) return true;
-  // Scan every column for a span, not just columns[0]: legacy rows may carry
-  // span only on a later column, which normalizeLayoutRow still accepts.
   const columns = Array.isArray(value.columns) ? value.columns : [];
   return columns.some((column) => isRecord(column) && "span" in column);
 }
 
+/** Coerces a blocks value to an array, wrapping a singleton block object when needed. */
 export function asBlocksArray(value: unknown): unknown[] {
   if (Array.isArray(value)) return value;
-  // Tolerate a singleton block object stored where an array was expected so it
-  // is preserved (and editable) instead of throwing in render / being silently
-  // emptied in admin and overwritten on the next save.
   return isRecord(value) ? [value] : [];
 }
 
@@ -34,8 +37,6 @@ function normalizeLayoutColumn(
   rowIndex: number,
   columnIndex: number,
 ): LayoutBuilderColumn {
-  // Tolerate null/primitive holes in the columns array the same way the admin
-  // path does, rather than throwing on a property access during render.
   const col = (isRecord(column) ? column : {}) as Partial<LayoutBuilderColumn>;
   return {
     id:
@@ -47,10 +48,8 @@ function normalizeLayoutColumn(
   };
 }
 
+/** Normalizes one row: fills ids/spans, aligns columns to the layout pattern, normalizes blocks. */
 export function normalizeLayoutRow(layout: LayoutBuilderRow, rowIndex = 0): LayoutBuilderRow {
-  // Tolerate messy persisted JSON (null/undefined/primitive holes in the
-  // layouts array) the same way the admin path does, rather than throwing on
-  // a property access and aborting the render.
   const row = (isRecord(layout) ? layout : {}) as Partial<LayoutBuilderRow>;
   const storedColumns = Array.isArray(row.columns) ? row.columns : [];
   const normalizedColumns = storedColumns.map((column, columnIndex) =>
@@ -78,20 +77,20 @@ export function normalizeLayoutRow(layout: LayoutBuilderRow, rowIndex = 0): Layo
   };
 }
 
+/** Coerces a field value to a row array, wrapping a singleton row object when needed. */
 export function asLayoutRows(value?: LayoutBuilderValue | LayoutBuilderRow | null): LayoutBuilderValue {
   if (Array.isArray(value)) return value;
-  // Tolerate a singleton row object persisted where an array was expected
-  // (e.g. a migration that stored one row instead of [row]) instead of
-  // throwing in render or silently discarding it in admin.
   return isLayoutBuilderRow(value) ? [value] : [];
 }
 
+/** Normalizes every row in a layout value, tolerating null and primitive holes. */
 export function normalizeLayoutRows(
   layouts?: LayoutBuilderValue | LayoutBuilderRow | null,
 ): LayoutBuilderValue {
   return asLayoutRows(layouts).map((layout, rowIndex) => normalizeLayoutRow(layout, rowIndex));
 }
 
+/** Normalized rows ready for frontend rendering (rows without columns are dropped). */
 export function visibleLayoutRows(
   layouts?: LayoutBuilderValue | LayoutBuilderRow | null,
 ): LayoutBuilderValue {
