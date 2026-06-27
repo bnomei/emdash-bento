@@ -422,37 +422,37 @@ export function LayoutsField({
         </div>
       ) : null}
       {layouts.map((row, rowIndex) => {
-        const layoutMenuOptions =
-          layouts.length > 1
+        // Move options self-gate by position; the remove option is always
+        // present so the last remaining row can still be removed, returning
+        // the field to the documented empty `[]` state.
+        const layoutMenuOptions = [
+          ...(rowIndex > 0
             ? [
-                ...(rowIndex > 0
-                  ? [
-                      {
-                        icon: <ArrowUpIcon size={14} />,
-                        id: "move-up",
-                        tooltip: bentoMessage("moveLayoutUp", i18n),
-                        onClick: () => moveLayout(rowIndex, rowIndex - 1),
-                      },
-                    ]
-                  : []),
-                ...(rowIndex < layouts.length - 1
-                  ? [
-                      {
-                        icon: <ArrowDownIcon size={14} />,
-                        id: "move-down",
-                        tooltip: bentoMessage("moveLayoutDown", i18n),
-                        onClick: () => moveLayout(rowIndex, rowIndex + 1),
-                      },
-                    ]
-                  : []),
                 {
-                  icon: <TrashIcon size={14} />,
-                  id: "remove",
-                  tooltip: bentoMessage("removeLayout", i18n),
-                  onClick: () => updateLayouts(layouts.filter((_row, index) => index !== rowIndex)),
+                  icon: <ArrowUpIcon size={14} />,
+                  id: "move-up",
+                  tooltip: bentoMessage("moveLayoutUp", i18n),
+                  onClick: () => moveLayout(rowIndex, rowIndex - 1),
                 },
               ]
-            : [];
+            : []),
+          ...(rowIndex < layouts.length - 1
+            ? [
+                {
+                  icon: <ArrowDownIcon size={14} />,
+                  id: "move-down",
+                  tooltip: bentoMessage("moveLayoutDown", i18n),
+                  onClick: () => moveLayout(rowIndex, rowIndex + 1),
+                },
+              ]
+            : []),
+          {
+            icon: <TrashIcon size={14} />,
+            id: "remove",
+            tooltip: bentoMessage("removeLayout", i18n),
+            onClick: () => updateLayouts(layouts.filter((_row, index) => index !== rowIndex)),
+          },
+        ];
 
         return (
           <section key={row.id} style={rowStyle}>

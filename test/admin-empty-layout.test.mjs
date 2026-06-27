@@ -24,6 +24,14 @@ test("blurring an invalid layout pattern falls back to the current layout", () =
   assert.match(source, /fallbackLayout=\{row\.layout \|\| columnsToLayout\(row\.columns\)\}/);
 });
 
+test("the remove-layout control is available even for the last remaining row", () => {
+  // The remove option must not be gated behind layouts.length > 1, otherwise a
+  // single row can never be removed back to the empty [] state.
+  assert.doesNotMatch(source, /layouts\.length > 1\s*\n?\s*\?\s*\[/);
+  assert.match(source, /id: "remove",\s*\n\s*tooltip: bentoMessage\("removeLayout"/);
+  assert.match(source, /const layoutMenuOptions = \[/);
+});
+
 test("a singleton row object is coerced into an editable row, not empty state", () => {
   // asLayouts must wrap a non-array layout-row object so a migration mistake
   // is editable instead of silently empty (and overwritten on next save).

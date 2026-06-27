@@ -1,5 +1,5 @@
 DEVANA-FINDING: v1
-Priority: P2 | Confidence: high | Security-sensitive: no | Status: open
+Priority: P2 | Confidence: high | Security-sensitive: no | Status: fixed
 Location: src/admin.tsx:411-441 | Slug: last-layout-row-not-removable
 
 # Last layout row cannot be removed through the widget
@@ -48,6 +48,7 @@ After working this report, preserve the original finding body. Update line 2 `St
 ## Status Notes
 
 - 2026-06-25: open by Devana. Initial report written from static source inspection.
+- 2026-06-27: fixed. Removed the outer `layouts.length > 1` wrapper around `layoutMenuOptions`. The move-up/move-down options already self-gate by `rowIndex`, so dropping the wrapper keeps them hidden for a single row while the remove (trash) option now always renders. Removing the last row calls `updateLayouts(layouts.filter(...))` → `onChange([])`, returning the field to the documented empty state. Added a source regression assertion. Verified: 19/19 tests pass, `tsc --noEmit` clean.
 
 DEVANA-KEY: src/admin.tsx:411-441 | P2 | last-layout-row-not-removable
-DEVANA-SUMMARY: Status=open | P2 high src/admin.tsx:411-441 - Remove layout is hidden when only one row exists, so editors cannot return the field to the documented empty array state.
+DEVANA-SUMMARY: Status=fixed | P2 high src/admin.tsx:411-441 - Remove layout was hidden when only one row existed. Fixed by always rendering the remove option (move options still self-gate by position), so the last row can be removed back to [].
