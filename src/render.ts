@@ -34,13 +34,16 @@ function normalizeLayoutColumn(
   rowIndex: number,
   columnIndex: number,
 ): LayoutBuilderColumn {
+  // Tolerate null/primitive holes in the columns array the same way the admin
+  // path does, rather than throwing on a property access during render.
+  const col = (isRecord(column) ? column : {}) as Partial<LayoutBuilderColumn>;
   return {
     id:
-      typeof column.id === "string" && column.id
-        ? column.id
+      typeof col.id === "string" && col.id
+        ? col.id
         : `layout-${rowIndex + 1}-column-${columnIndex + 1}`,
-    span: typeof column.span === "string" && column.span ? column.span : "1/1",
-    blocks: normalizeBlocks(asBlocksArray(column.blocks) as LayoutBuilderColumn["blocks"]),
+    span: typeof col.span === "string" && col.span ? col.span : "1/1",
+    blocks: normalizeBlocks(asBlocksArray(col.blocks) as LayoutBuilderColumn["blocks"]),
   };
 }
 

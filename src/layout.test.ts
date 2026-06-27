@@ -234,6 +234,30 @@ test("normalizeLayoutRows tolerates null and primitive holes without throwing", 
   assert.doesNotThrow(() => visibleLayoutRows([null as unknown as LayoutBuilderRow]));
 });
 
+test("normalizeLayoutRow tolerates null/primitive column holes without throwing", () => {
+  const stored = {
+    id: "row-1",
+    layout: "1/2, 1/2",
+    columns: [null, { id: "c2", span: "1/2", blocks: [] }],
+  } as unknown as LayoutBuilderRow;
+
+  assert.doesNotThrow(() => normalizeLayoutRow(stored));
+  const row = normalizeLayoutRow(stored);
+  assert.equal(row.columns.length, 2);
+  // Null hole becomes a synthesized default column, matching admin.
+  assert.equal(row.columns[0]?.id, "layout-1-column-1");
+  assert.equal(row.columns[1]?.id, "c2");
+  assert.doesNotThrow(() =>
+    visibleLayoutRows([
+      {
+        id: "row-1",
+        layout: "1/2, 1/2",
+        columns: ["x", null],
+      } as unknown as LayoutBuilderRow,
+    ]),
+  );
+});
+
 test("normalizeLayoutRow preserves a singleton block object on a column", () => {
   const stored = {
     id: "hero",

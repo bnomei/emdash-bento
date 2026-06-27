@@ -1,5 +1,5 @@
 DEVANA-FINDING: v1
-Priority: P2 | Confidence: high | Security-sensitive: no | Status: open
+Priority: P2 | Confidence: high | Security-sensitive: no | Status: fixed
 Location: src/render.ts:20-38,src/admin.tsx:199-213 | Slug: normalize-layout-column-null-throws
 
 # normalizeLayoutColumn throws on null columns array elements
@@ -59,6 +59,7 @@ After working this report, preserve the original finding body. Update line 2 `St
 ## Status Notes
 
 - 2026-06-27: open by Devana. Initial report written from static source inspection.
+- 2026-06-27: fixed. `normalizeLayoutColumn` now coerces its argument via `isRecord` (`const col = isRecord(column) ? column : {}`) before any property access, so null/primitive holes in the `columns` array no longer throw — they synthesize a default column (deterministic `layout-N-column-M` id), matching the admin `asRecord` path. Mirrors the row-level [normalize-layout-row-null-throws] fix. Added a runtime regression test covering a leading null column and primitive column entries via `visibleLayoutRows`. Verified: 25/25 tests pass, `tsc --noEmit` clean.
 
 DEVANA-KEY: src/render.ts:20-38,src/admin.tsx:199-213 | P2 | normalize-layout-column-null-throws
-DEVANA-SUMMARY: Status=open | P2 high src/render.ts:20-38,src/admin.tsx:199-213 - null entries in columns[] crash normalizeLayoutRow while admin normalization synthesizes a default column.
+DEVANA-SUMMARY: Status=fixed | P2 high src/render.ts:20-38,src/admin.tsx:199-213 - null entries in columns[] crashed normalizeLayoutRow. Fixed by coercing non-object columns via isRecord in normalizeLayoutColumn, matching the admin path.
