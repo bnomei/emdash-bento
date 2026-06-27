@@ -1,5 +1,5 @@
 DEVANA-FINDING: v1
-Priority: P2 | Confidence: medium | Security-sensitive: no | Status: open
+Priority: P2 | Confidence: medium | Security-sensitive: no | Status: fixed
 Location: src/layout.ts:76-85,src/admin.tsx:479-492 | Slug: span-rounding-false-wrap
 
 # spanToGridColumns rounding wraps exact full-width rows
@@ -52,6 +52,7 @@ After working this report, preserve the original finding body. Update line 2 `St
 ## Status Notes
 
 - 2026-06-27: open by Devana. Initial report written from static source inspection.
+- 2026-06-27: fixed. Added a row-aware `layoutGridSpans(spans)` helper in src/layout.ts. When the fractional total is <= 1/1 it distributes `round(total * 12)` grid units across the columns with a largest-remainder method (each column >= 1 unit), so equal-width patterns such as seven 1/7 (or eight 1/8) total 12 and stay on one grid line instead of overflowing to 14/16 and wrapping. Rows whose fractions sum to more than 1/1 keep per-span `spanToGridColumns` rounding so they still wrap as the README documents. Admin now computes one `rowGridSpans` per row and indexes it by column instead of calling `spanToGridColumns` per span; `layoutGridSpans` is re-exported from render.ts and the public index.ts for frontend layouts that share the helper. Common patterns (1/2,1/2 -> 6,6; 1/3 x3 -> 4,4,4; 1/2,1/3,1/6 -> 6,4,2) are unchanged. Added a runtime regression test. Verified: 26/26 tests pass, `tsc --noEmit` clean.
 
 DEVANA-KEY: src/layout.ts:76-85,src/admin.tsx:479-492 | P2 | span-rounding-false-wrap
-DEVANA-SUMMARY: Status=open | P2 medium src/layout.ts:76-85,src/admin.tsx:479-492 - Valid equal-width rows such as seven 1/7 columns sum to 1/1 fractionally but round to 14 grid units and wrap incorrectly.
+DEVANA-SUMMARY: Status=fixed | P2 medium src/layout.ts:76-85,src/admin.tsx:479-492 - Equal-width rows summing to 1/1 (e.g. seven 1/7) rounded to >12 grid units and wrapped. Fixed with a row-aware largest-remainder layoutGridSpans allocation; sum>1/1 rows still wrap.

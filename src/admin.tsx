@@ -19,6 +19,7 @@ import {
   columnsToLayout,
   layoutColumns as buildLayoutColumns,
   layoutColumnsPreservingExisting,
+  layoutGridSpans,
   layoutSpans,
   normalizeLayoutPattern,
   spanToGridColumns,
@@ -427,6 +428,9 @@ export function LayoutsField({
         </div>
       ) : null}
       {layouts.map((row, rowIndex) => {
+        // Row-level grid allocation so equal-width patterns whose fractions sum
+        // to 1/1 (e.g. seven 1/7) do not overflow 12 units and wrap.
+        const rowGridSpans = layoutGridSpans(row.columns.map((column) => column.span));
         // Move options self-gate by position; the remove option is always
         // present so the last remaining row can still be removed, returning
         // the field to the documented empty `[]` state.
@@ -496,7 +500,7 @@ export function LayoutsField({
             </div>
             <div style={columnGridStyle}>
               {row.columns.map((column, columnIndex) => {
-                const gridSpan = spanToGridColumns(column.span);
+                const gridSpan = rowGridSpans[columnIndex] ?? spanToGridColumns(column.span);
                 const columnSpanOptions = spanOptions(row.layout);
                 const columnSpanValue = columnSpanOptions.some((item) => item.value === column.span)
                   ? column.span

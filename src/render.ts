@@ -10,7 +10,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
-export { layoutSpans, spanToGridColumns } from "./layout.js";
+export { layoutGridSpans, layoutSpans, spanToGridColumns } from "./layout.js";
 
 export function isLayoutBuilderRow(value: unknown): value is LayoutBuilderRow {
   if (!isRecord(value)) return false;

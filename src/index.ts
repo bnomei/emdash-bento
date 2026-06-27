@@ -18,6 +18,7 @@ export type {
 } from "./types";
 export {
   isLayoutBuilderRow,
+  layoutGridSpans,
   layoutSpans,
   normalizeLayoutRow,
   normalizeLayoutRows,

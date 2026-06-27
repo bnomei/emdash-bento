@@ -8,7 +8,12 @@ import {
   spanToGridColumns,
   visibleLayoutRows,
 } from "./render.js";
-import { columnsToLayout, layoutColumns, normalizeLayoutPattern } from "./layout.js";
+import {
+  columnsToLayout,
+  layoutColumns,
+  layoutGridSpans,
+  normalizeLayoutPattern,
+} from "./layout.js";
 import { bentoMessage, formatBentoMessage, localeFallbacks, localizedString } from "./i18n.js";
 import type { LayoutBuilderRow } from "./types.js";
 
@@ -61,6 +66,31 @@ test("spanToGridColumns clamps or falls back for edge cases", () => {
   assert.equal(spanToGridColumns("0/3"), 12);
   assert.equal(spanToGridColumns("abc"), 12);
   assert.equal(spanToGridColumns(), 12);
+});
+
+test("layoutGridSpans keeps full-width rows on one 12-column grid line", () => {
+  const sum = (spans: number[]) => spans.reduce((total, value) => total + value, 0);
+
+  // Seven 1/7 columns sum to exactly 1/1 and must total 12 (no false wrap),
+  // unlike per-span rounding which would yield 7 x 2 = 14.
+  const sevens = layoutGridSpans(Array(7).fill("1/7"));
+  assert.equal(sum(sevens), 12);
+  assert.ok(sevens.every((value) => value >= 1));
+
+  // Eight 1/8 columns: per-span rounding gives 16; allocation gives 12.
+  assert.equal(sum(layoutGridSpans(Array(8).fill("1/8"))), 12);
+
+  // Common patterns are unchanged.
+  assert.deepEqual(layoutGridSpans(["1/2", "1/2"]), [6, 6]);
+  assert.deepEqual(layoutGridSpans(["1/3", "1/3", "1/3"]), [4, 4, 4]);
+  assert.deepEqual(layoutGridSpans(["1/2", "1/3", "1/6"]), [6, 4, 2]);
+  assert.deepEqual(layoutGridSpans(["1/2"]), [6]);
+
+  // Rows whose fractions sum to more than 1/1 still wrap (per-span rounding).
+  assert.deepEqual(layoutGridSpans(["1/1", "1/1"]), [12, 12]);
+  assert.equal(sum(layoutGridSpans(["1/2", "1/2", "1/2"])), 18);
+
+  assert.deepEqual(layoutGridSpans([]), []);
 });
 
 test("normalizeLayoutRow preserves row and column updates while filling stable defaults", () => {
