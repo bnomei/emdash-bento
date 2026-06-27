@@ -1,5 +1,5 @@
 DEVANA-FINDING: v1
-Priority: P1 | Confidence: high | Security-sensitive: no | Status: open
+Priority: P1 | Confidence: high | Security-sensitive: no | Status: fixed
 Location: src/admin.tsx:298-300,609-616 | Slug: layout-draft-lost-on-row-update
 
 # Uncommitted layout draft reset when same-row layout value changes
@@ -53,6 +53,7 @@ After working this report, preserve the original finding body. Update line 2 `St
 ## Status Notes
 
 - 2026-06-25: open by Devana. Initial report written from static source inspection.
+- 2026-06-27: fixed. Added an `isFocused` ref to `LayoutPatternField`; the `[value]` sync effect now early-returns while the field is focused, so prop changes from same-row structural edits no longer overwrite an in-progress draft. `onFocus` sets the ref true; `onBlur` clears it before normalizing/committing, so the committed value still syncs back afterward. Added a source regression assertion in test/admin-empty-layout.test.mjs. Verified: 16/16 tests pass, `tsc --noEmit` clean.
 
 DEVANA-KEY: src/admin.tsx:298-300,609-616 | P1 | layout-draft-lost-on-row-update
-DEVANA-SUMMARY: Status=open | P1 high src/admin.tsx:298-300,609-616 - LayoutPatternField resets its draft whenever row.layout changes, so same-row column actions can erase uncommitted layout text.
+DEVANA-SUMMARY: Status=fixed | P1 high src/admin.tsx:298-300,609-616 - LayoutPatternField reset its draft whenever row.layout changed, so same-row column actions could erase uncommitted layout text. Fixed with a focus-guarded draft-sync effect.

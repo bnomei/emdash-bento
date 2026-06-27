@@ -7,7 +7,7 @@ import {
   PlusIcon,
   TrashIcon,
 } from "@phosphor-icons/react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { CSSProperties, ChangeEvent } from "react";
 import { BlocksField } from "@bnomei/emdash-blocks/admin";
 import type { BlockBuilderBlock, BlockBuilderValue } from "@bnomei/emdash-blocks";
@@ -294,8 +294,13 @@ function LayoutPatternField({
   onCommit: (value: string) => void;
 }) {
   const [draft, setDraft] = useState(value);
+  const isFocused = useRef(false);
 
   useEffect(() => {
+    // Don't overwrite an in-progress draft while the field is focused; same-row
+    // structural edits (add/remove/move column, span change) mutate row.layout
+    // and would otherwise revert the user's uncommitted text before blur.
+    if (isFocused.current) return;
     setDraft(value);
   }, [value]);
 
@@ -309,7 +314,11 @@ function LayoutPatternField({
         style={layoutPatternInputStyle}
         value={draft}
         onChange={(event: ChangeEvent<HTMLInputElement>) => setDraft(event.currentTarget.value)}
+        onFocus={() => {
+          isFocused.current = true;
+        }}
         onBlur={() => {
+          isFocused.current = false;
           const nextLayout = normalizeLayoutPattern(draft, fallbackLayout ?? "");
           setDraft(nextLayout);
           onCommit(nextLayout);
