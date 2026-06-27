@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 const source = await readFile(new URL("../src/admin.tsx", import.meta.url), "utf8");
+const readme = await readFile(new URL("../README.md", import.meta.url), "utf8");
 
 test("empty layouts stay empty on mount", () => {
   assert.match(source, /const layouts = asLayouts\(value\);/);
@@ -75,4 +76,13 @@ test("layout draft is not overwritten while the field is focused", () => {
   assert.match(source, /const isFocused = useRef\(false\)/);
   assert.match(source, /if \(isFocused\.current\) return;\s*\n\s*setDraft\(value\)/);
   assert.match(source, /onFocus=\{\(\) => \{\s*\n\s*isFocused\.current = true;/);
+});
+
+test("frontend README uses row-level grid allocation", () => {
+  // Per-column spanToGridColumns rounds seven 1/7 columns to 14 grid units.
+  // The documented frontend path must use the row-aware allocator instead.
+  assert.match(readme, /import \{ layoutGridSpans, visibleLayoutRows \}/);
+  assert.match(readme, /const gridSpans = layoutGridSpans\(row\.columns\.map\(\(column\) => column\.span\)\)/);
+  assert.match(readme, /style=\{`--span: \$\{gridSpans\[columnIndex\] \?\? 12\}`\}/);
+  assert.doesNotMatch(readme, /spanToGridColumns\(column\.span\)/);
 });

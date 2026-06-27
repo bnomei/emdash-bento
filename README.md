@@ -132,7 +132,7 @@ Render layout rows as a 12-column CSS grid. The package exports helpers for the
 common data preparation and span calculation:
 
 ```ts
-import { spanToGridColumns, visibleLayoutRows } from "@bnomei/emdash-bento";
+import { layoutGridSpans, visibleLayoutRows } from "@bnomei/emdash-bento";
 import { visibleBlocks } from "@bnomei/emdash-blocks";
 
 const rows = visibleLayoutRows(entry.layouts);
@@ -140,19 +140,23 @@ const rows = visibleLayoutRows(entry.layouts);
 
 ```astro
 {
-  rows.map((row) => (
-    <section class="layout" data-layout-id={row.id}>
-      {row.columns.map((column) => (
-        <div
-          class="column"
-          style={`--span: ${spanToGridColumns(column.span)}`}
-          data-column-id={column.id}
-        >
-          {visibleBlocks(column.blocks).map((block) => renderBlock(block))}
-        </div>
-      ))}
-    </section>
-  ))
+  rows.map((row) => {
+    const gridSpans = layoutGridSpans(row.columns.map((column) => column.span));
+
+    return (
+      <section class="layout" data-layout-id={row.id}>
+        {row.columns.map((column, columnIndex) => (
+          <div
+            class="column"
+            style={`--span: ${gridSpans[columnIndex] ?? 12}`}
+            data-column-id={column.id}
+          >
+            {visibleBlocks(column.blocks).map((block) => renderBlock(block))}
+          </div>
+        ))}
+      </section>
+    );
+  })
 }
 ```
 
