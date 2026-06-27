@@ -24,6 +24,16 @@ test("blurring an invalid layout pattern falls back to the current layout", () =
   assert.match(source, /fallbackLayout=\{row\.layout \|\| columnsToLayout\(row\.columns\)\}/);
 });
 
+test("synthetic columns implied by the layout use deterministic ids", () => {
+  // normalizeRow's column factory must not use randomId, otherwise columns
+  // implied by the layout pattern remount on every re-render before the first
+  // save and lose in-progress block edits.
+  assert.match(
+    source,
+    /\(columnIndex, span\) => \(\{\s*\n\s*id: `layout-\$\{rowIndex \+ 1\}-column-\$\{columnIndex \+ 1\}`/,
+  );
+});
+
 test("the remove-layout control is available even for the last remaining row", () => {
   // The remove option must not be gated behind layouts.length > 1, otherwise a
   // single row can never be removed back to the empty [] state.

@@ -1,5 +1,5 @@
 DEVANA-FINDING: v1
-Priority: P2 | Confidence: medium | Security-sensitive: no | Status: open
+Priority: P2 | Confidence: medium | Security-sensitive: no | Status: fixed
 Location: src/admin.tsx:228-236,350 | Slug: synthetic-column-ids-unstable
 
 # Synthetic column IDs regenerate on every parent re-render
@@ -51,6 +51,7 @@ After working this report, preserve the original finding body. Update line 2 `St
 ## Status Notes
 
 - 2026-06-25: open by Devana. Initial report written from static source inspection.
+- 2026-06-27: fixed. The synthetic-column factory in admin `normalizeRow` now produces deterministic IDs `layout-${rowIndex + 1}-column-${columnIndex + 1}`, matching `normalizeColumn` and render's `normalizeLayoutRow`, instead of `randomId("column")`. Columns implied by the layout pattern now keep a stable identity across re-renders before the first save, so `key={column.id}` no longer remounts their `BlocksMiniEditor`. `randomId` is retained for genuinely new user-initiated add-column/add-layout actions. Added a source regression assertion. Verified: 20/20 tests pass, `tsc --noEmit` clean.
 
 DEVANA-KEY: src/admin.tsx:228-236,350 | P2 | synthetic-column-ids-unstable
-DEVANA-SUMMARY: Status=open | P2 medium src/admin.tsx:228-236,350 - Missing columns implied by layout are created with randomId on every render, remounting column editors before the first save.
+DEVANA-SUMMARY: Status=fixed | P2 medium src/admin.tsx:228-236,350 - Columns implied by the layout were fabricated with randomId on every render, remounting editors before the first save. Fixed by using deterministic per-index IDs matching the render adapter.

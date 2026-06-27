@@ -229,8 +229,11 @@ function normalizeRow(value: unknown, rowIndex: number): LayoutBuilderRow {
   const columns = layoutColumnsPreservingExisting(
     layoutPattern,
     existingColumns,
-    (_index, span) => ({
-      id: randomId("column"),
+    // Deterministic IDs (matching normalizeColumn and render's normalizeLayoutRow)
+    // so columns implied by the layout pattern keep a stable identity across
+    // re-renders before the first save; randomId would remount their editors.
+    (columnIndex, span) => ({
+      id: `layout-${rowIndex + 1}-column-${columnIndex + 1}`,
       span,
       blocks: [],
     }),
