@@ -456,6 +456,7 @@ export function LayoutsField({
               <LayoutPatternField
                 id={`${id}-${rowIndex}-layout`}
                 value={row.layout}
+                fallbackLayout={row.layout || columnsToLayout(row.columns)}
                 ariaLabel={bentoMessage("layout", i18n)}
                 onCommit={(layout) =>
                   updateRow(rowIndex, {
