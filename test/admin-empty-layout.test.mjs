@@ -46,7 +46,14 @@ test("a singleton row object is coerced into an editable row, not empty state", 
   // asLayouts must wrap a non-array layout-row object so a migration mistake
   // is editable instead of silently empty (and overwritten on next save).
   assert.match(source, /isLayoutBuilderRow\(value\) \? \[value\] : \[\]/);
-  assert.match(source, /import \{ isLayoutBuilderRow \} from "\.\/render"/);
+  assert.match(source, /import \{[^}]*isLayoutBuilderRow[^}]*\} from "\.\/render"/);
+});
+
+test("a singleton block object on a column is coerced, not emptied", () => {
+  // admin normalizeBlocks must wrap a singleton block object via the shared
+  // asBlocksArray helper instead of returning [] for any non-array value.
+  assert.match(source, /import \{[^}]*asBlocksArray[^}]*\} from "\.\/render"/);
+  assert.match(source, /return asBlocksArray\(value\)\.map\(\(item, index\) => normalizeBlock/);
 });
 
 test("layout draft is not overwritten while the field is focused", () => {

@@ -234,6 +234,34 @@ test("normalizeLayoutRows tolerates null and primitive holes without throwing", 
   assert.doesNotThrow(() => visibleLayoutRows([null as unknown as LayoutBuilderRow]));
 });
 
+test("normalizeLayoutRow preserves a singleton block object on a column", () => {
+  const stored = {
+    id: "hero",
+    layout: "1/1",
+    columns: [
+      {
+        id: "c1",
+        span: "1/1",
+        blocks: { id: "headline", type: "text", props: { text: "Hi" } },
+      },
+    ],
+  } as unknown as LayoutBuilderRow;
+
+  assert.doesNotThrow(() => normalizeLayoutRow(stored));
+  const row = normalizeLayoutRow(stored);
+  assert.equal(row.columns[0]?.blocks.length, 1);
+  assert.equal(row.columns[0]?.blocks[0]?.id, "headline");
+  assert.equal(row.columns[0]?.blocks[0]?.type, "text");
+
+  // Null/undefined blocks still normalize to [] in both directions.
+  const empty = {
+    id: "r",
+    layout: "1/1",
+    columns: [{ id: "c1", span: "1/1", blocks: null }],
+  } as unknown as LayoutBuilderRow;
+  assert.deepEqual(normalizeLayoutRow(empty).columns[0]?.blocks, []);
+});
+
 test("isLayoutBuilderRow detects span on any column, not just the first", () => {
   assert.equal(isLayoutBuilderRow({ id: "row-1", layout: "1/1" }), true);
   assert.equal(

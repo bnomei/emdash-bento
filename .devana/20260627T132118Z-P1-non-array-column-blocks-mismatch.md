@@ -1,5 +1,5 @@
 DEVANA-FINDING: v1
-Priority: P1 | Confidence: high | Security-sensitive: no | Status: open
+Priority: P1 | Confidence: high | Security-sensitive: no | Status: fixed
 Location: src/admin.tsx:195-197,211,src/render.ts:31 | Slug: non-array-column-blocks-mismatch
 
 # Non-array column.blocks coerced in admin and throws in render
@@ -62,6 +62,7 @@ After working this report, preserve the original finding body. Update line 2 `St
 ## Status Notes
 
 - 2026-06-27: open by Devana. Initial report written from static source inspection.
+- 2026-06-27: fixed. Added a shared `asBlocksArray(value)` helper in src/render.ts: returns arrays as-is, wraps a singleton record into a one-element array, and maps anything else to `[]`. `normalizeLayoutColumn` now pre-coerces `column.blocks` through it before the package `normalizeBlocks` (no more `.map` on a non-array object → no throw in render). Admin `normalizeBlocks` routes through the same helper, so a singleton block object is preserved and editable instead of being silently emptied and overwritten on the next save. `null`/`undefined`/primitive blocks still normalize to `[]` in both paths. This wraps-to-preserve approach mirrors the [non-array-layout-value-mishandled] row-level fix. Added runtime + source regression tests. Verified: 24/24 tests pass, `tsc --noEmit` clean.
 
 DEVANA-KEY: src/admin.tsx:195-197,211,src/render.ts:31 | P1 | non-array-column-blocks-mismatch
-DEVANA-SUMMARY: Status=open | P1 high src/admin.tsx:195-197,211,src/render.ts:31 - Singleton block objects in column.blocks are emptied in admin but crash normalizeLayoutRows, and the next save can persist blocks: [].
+DEVANA-SUMMARY: Status=fixed | P1 high src/admin.tsx:195-197,211,src/render.ts:31 - Singleton block objects in column.blocks were emptied in admin but crashed render. Fixed with a shared asBlocksArray helper that wraps a singleton block into a one-element array in both paths.

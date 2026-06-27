@@ -21,6 +21,14 @@ export function isLayoutBuilderRow(value: unknown): value is LayoutBuilderRow {
   return columns.some((column) => isRecord(column) && "span" in column);
 }
 
+export function asBlocksArray(value: unknown): unknown[] {
+  if (Array.isArray(value)) return value;
+  // Tolerate a singleton block object stored where an array was expected so it
+  // is preserved (and editable) instead of throwing in render / being silently
+  // emptied in admin and overwritten on the next save.
+  return isRecord(value) ? [value] : [];
+}
+
 function normalizeLayoutColumn(
   column: LayoutBuilderColumn,
   rowIndex: number,
@@ -32,7 +40,7 @@ function normalizeLayoutColumn(
         ? column.id
         : `layout-${rowIndex + 1}-column-${columnIndex + 1}`,
     span: typeof column.span === "string" && column.span ? column.span : "1/1",
-    blocks: normalizeBlocks(column.blocks),
+    blocks: normalizeBlocks(asBlocksArray(column.blocks) as LayoutBuilderColumn["blocks"]),
   };
 }
 

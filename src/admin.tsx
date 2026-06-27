@@ -12,7 +12,7 @@ import type { CSSProperties, ChangeEvent } from "react";
 import { BlocksField } from "@bnomei/emdash-blocks/admin";
 import type { BlockBuilderBlock, BlockBuilderValue } from "@bnomei/emdash-blocks";
 import { useAdminLocale } from "./admin-locale";
-import { isLayoutBuilderRow } from "./render";
+import { asBlocksArray, isLayoutBuilderRow } from "./render";
 import { bentoMessage, formatBentoMessage, localizedString, type BentoI18nConfig } from "./i18n";
 import {
   DEFAULT_LAYOUT_PATTERN,
@@ -194,7 +194,9 @@ function normalizeBlock(value: unknown, index: number): BlockBuilderBlock {
 }
 
 function normalizeBlocks(value: unknown): BlockBuilderValue {
-  return Array.isArray(value) ? value.map((item, index) => normalizeBlock(item, index)) : [];
+  // Wrap a singleton block object into a one-element array (matching render's
+  // asBlocksArray) so it is preserved and editable instead of silently emptied.
+  return asBlocksArray(value).map((item, index) => normalizeBlock(item, index));
 }
 
 function normalizeColumn(
