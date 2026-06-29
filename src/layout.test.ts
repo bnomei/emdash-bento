@@ -47,7 +47,10 @@ test("bentoMessage honors a fallback locale that routes through the default loca
   assert.equal(bentoMessage("grid", config), "Raster");
   assert.equal(localizedString({ de: "Raster" }, config), "Raster");
 
-  assert.equal(bentoMessage("grid", { locale: "en", messages: { en: { grid: "Custom" } } }), "Custom");
+  assert.equal(
+    bentoMessage("grid", { locale: "en", messages: { en: { grid: "Custom" } } }),
+    "Custom",
+  );
   assert.equal(bentoMessage("grid", { locale: "en" }), "Grid");
   assert.equal(bentoMessage("grid", { locale: "fr" }), "Grid");
 });
@@ -91,6 +94,10 @@ test("layoutGridSpans keeps full-width rows on one 12-column grid line", () => {
   const sevens = layoutGridSpans(Array(7).fill("1/7"));
   assert.equal(sum(sevens), 12);
   assert.ok(sevens.every((value) => value >= 1));
+
+  const elevens = layoutGridSpans(Array(11).fill("1/11"));
+  assert.equal(sum(elevens), 12);
+  assert.ok(elevens.every((value) => value >= 1));
 
   assert.equal(sum(layoutGridSpans(Array(8).fill("1/8"))), 12);
 
@@ -260,9 +267,7 @@ test("normalizeLayoutRows tolerates null and primitive holes without throwing", 
     columns: [{ id: "layout-1-column-1", span: "1/1", blocks: [] }],
   };
 
-  assert.doesNotThrow(() =>
-    normalizeLayoutRows([good, null as unknown as LayoutBuilderRow]),
-  );
+  assert.doesNotThrow(() => normalizeLayoutRows([good, null as unknown as LayoutBuilderRow]));
   const rows = normalizeLayoutRows([
     null as unknown as LayoutBuilderRow,
     good,

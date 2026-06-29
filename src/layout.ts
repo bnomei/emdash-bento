@@ -15,6 +15,8 @@ type SpanParts = {
   denominator: number;
 };
 
+const GRID_OVERFLOW_EPSILON = 1e-12;
+
 /** Factory invoked when a layout pattern implies more columns than are stored. */
 export type LayoutColumnFactory = (index: number, span: string) => LayoutBuilderColumn;
 
@@ -123,7 +125,7 @@ export function layoutGridSpans(spans: readonly string[]): number[] {
   const fractions = spans.map(spanFraction);
   const totalFraction = fractions.reduce((sum, fraction) => sum + fraction, 0);
 
-  if (totalFraction > 1) {
+  if (totalFraction > 1 + GRID_OVERFLOW_EPSILON) {
     return spans.map((span) => spanToGridColumns(span));
   }
 
