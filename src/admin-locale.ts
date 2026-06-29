@@ -1,8 +1,15 @@
+/**
+ * Active EmDash admin locale for the bento widget.
+ *
+ * Reads the `emdash-locale` cookie in the browser and resyncs on focus so
+ * widget copy tracks the admin language switcher without a full reload.
+ */
 import { useEffect, useState } from "react";
 import { DEFAULT_LOCALE, normalizeLocale } from "./i18n";
 
 const LOCALE_COOKIE_NAME = "emdash-locale";
 
+/** Current admin locale from the `emdash-locale` cookie, or `fallback` when absent. */
 export function readAdminLocale(fallback = DEFAULT_LOCALE): string {
   const normalizedFallback = normalizeLocale(fallback);
 
@@ -23,6 +30,7 @@ export function readAdminLocale(fallback = DEFAULT_LOCALE): string {
   }
 }
 
+/** React hook that tracks the admin locale cookie across focus and periodic resync. */
 export function useAdminLocale(fallback = DEFAULT_LOCALE): string {
   const [locale, setLocale] = useState(() => readAdminLocale(fallback));
 

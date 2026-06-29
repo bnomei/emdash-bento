@@ -1,13 +1,19 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  isLayoutBuilderRow,
   layoutSpans,
   normalizeLayoutRow,
   normalizeLayoutRows,
   spanToGridColumns,
   visibleLayoutRows,
 } from "./render.js";
-import { columnsToLayout, layoutColumns, normalizeLayoutPattern } from "./layout.js";
+import {
+  columnsToLayout,
+  layoutColumns,
+  layoutGridSpans,
+  normalizeLayoutPattern,
+} from "./layout.js";
 import { bentoMessage, formatBentoMessage, localeFallbacks, localizedString } from "./i18n.js";
 import type { LayoutBuilderRow } from "./types.js";
 
@@ -27,6 +33,26 @@ test("bento messages follow the EmDash-style fallback chain", () => {
   assert.equal(bentoMessage("addLayout", i18n), "Ajouter une mise en page");
   assert.equal(formatBentoMessage("columnWidth", i18n, { column: 2 }), "Column 2");
   assert.equal(localizedString({ en: "Grid", fr: "Grille" }, i18n), "Grille");
+});
+
+test("bentoMessage honors a fallback locale that routes through the default locale", () => {
+  const config = {
+    locale: "fr",
+    defaultLocale: "en",
+    fallback: { fr: "en", en: "de" },
+    messages: { de: { grid: "Raster" } },
+  };
+
+  assert.deepEqual(localeFallbacks(config), ["fr", "en", "de"]);
+  assert.equal(bentoMessage("grid", config), "Raster");
+  assert.equal(localizedString({ de: "Raster" }, config), "Raster");
+
+  assert.equal(
+    bentoMessage("grid", { locale: "en", messages: { en: { grid: "Custom" } } }),
+    "Custom",
+  );
+  assert.equal(bentoMessage("grid", { locale: "en" }), "Grid");
+  assert.equal(bentoMessage("grid", { locale: "fr" }), "Grid");
 });
 
 test("layoutSpans trims, filters, and falls back to a full-width span", () => {
@@ -60,6 +86,30 @@ test("spanToGridColumns clamps or falls back for edge cases", () => {
   assert.equal(spanToGridColumns("0/3"), 12);
   assert.equal(spanToGridColumns("abc"), 12);
   assert.equal(spanToGridColumns(), 12);
+});
+
+test("layoutGridSpans keeps full-width rows on one 12-column grid line", () => {
+  const sum = (spans: number[]) => spans.reduce((total, value) => total + value, 0);
+
+  const sevens = layoutGridSpans(Array(7).fill("1/7"));
+  assert.equal(sum(sevens), 12);
+  assert.ok(sevens.every((value) => value >= 1));
+
+  const elevens = layoutGridSpans(Array(11).fill("1/11"));
+  assert.equal(sum(elevens), 12);
+  assert.ok(elevens.every((value) => value >= 1));
+
+  assert.equal(sum(layoutGridSpans(Array(8).fill("1/8"))), 12);
+
+  assert.deepEqual(layoutGridSpans(["1/2", "1/2"]), [6, 6]);
+  assert.deepEqual(layoutGridSpans(["1/3", "1/3", "1/3"]), [4, 4, 4]);
+  assert.deepEqual(layoutGridSpans(["1/2", "1/3", "1/6"]), [6, 4, 2]);
+  assert.deepEqual(layoutGridSpans(["1/2"]), [6]);
+
+  assert.deepEqual(layoutGridSpans(["1/1", "1/1"]), [12, 12]);
+  assert.equal(sum(layoutGridSpans(["1/2", "1/2", "1/2"])), 18);
+
+  assert.deepEqual(layoutGridSpans([]), []);
 });
 
 test("normalizeLayoutRow preserves row and column updates while filling stable defaults", () => {
@@ -189,4 +239,115 @@ test("empty layout values stay empty until user action supplies rows", () => {
   };
 
   assert.deepEqual(normalizeLayoutRows([userAddedRow]), [userAddedRow]);
+});
+
+test("normalizeLayoutRows tolerates a singleton row object persisted without an array", () => {
+  const singleton = {
+    id: "hero",
+    layout: "1/2, 1/2",
+    columns: [
+      { id: "c1", span: "1/2", blocks: [] },
+      { id: "c2", span: "1/2", blocks: [] },
+    ],
+  } as unknown as LayoutBuilderRow;
+
+  const rows = normalizeLayoutRows(singleton);
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0]?.id, "hero");
+  assert.equal(rows[0]?.columns.length, 2);
+  assert.equal(visibleLayoutRows(singleton).length, 1);
+
+  assert.deepEqual(normalizeLayoutRows({ foo: "bar" } as unknown as LayoutBuilderRow), []);
+});
+
+test("normalizeLayoutRows tolerates null and primitive holes without throwing", () => {
+  const good: LayoutBuilderRow = {
+    id: "layout-1",
+    layout: "1/1",
+    columns: [{ id: "layout-1-column-1", span: "1/1", blocks: [] }],
+  };
+
+  assert.doesNotThrow(() => normalizeLayoutRows([good, null as unknown as LayoutBuilderRow]));
+  const rows = normalizeLayoutRows([
+    null as unknown as LayoutBuilderRow,
+    good,
+    "x" as unknown as LayoutBuilderRow,
+  ]);
+  assert.equal(rows.length, 3);
+  assert.equal(rows[0]?.columns.length, 1);
+  assert.equal(rows[1]?.id, "layout-1");
+  assert.doesNotThrow(() => visibleLayoutRows([null as unknown as LayoutBuilderRow]));
+});
+
+test("normalizeLayoutRow tolerates null/primitive column holes without throwing", () => {
+  const stored = {
+    id: "row-1",
+    layout: "1/2, 1/2",
+    columns: [null, { id: "c2", span: "1/2", blocks: [] }],
+  } as unknown as LayoutBuilderRow;
+
+  assert.doesNotThrow(() => normalizeLayoutRow(stored));
+  const row = normalizeLayoutRow(stored);
+  assert.equal(row.columns.length, 2);
+  assert.equal(row.columns[0]?.id, "layout-1-column-1");
+  assert.equal(row.columns[1]?.id, "c2");
+  assert.doesNotThrow(() =>
+    visibleLayoutRows([
+      {
+        id: "row-1",
+        layout: "1/2, 1/2",
+        columns: ["x", null],
+      } as unknown as LayoutBuilderRow,
+    ]),
+  );
+});
+
+test("normalizeLayoutRow preserves a singleton block object on a column", () => {
+  const stored = {
+    id: "hero",
+    layout: "1/1",
+    columns: [
+      {
+        id: "c1",
+        span: "1/1",
+        blocks: { id: "headline", type: "text", props: { text: "Hi" } },
+      },
+    ],
+  } as unknown as LayoutBuilderRow;
+
+  assert.doesNotThrow(() => normalizeLayoutRow(stored));
+  const row = normalizeLayoutRow(stored);
+  assert.equal(row.columns[0]?.blocks.length, 1);
+  assert.equal(row.columns[0]?.blocks[0]?.id, "headline");
+  assert.equal(row.columns[0]?.blocks[0]?.type, "text");
+
+  const empty = {
+    id: "r",
+    layout: "1/1",
+    columns: [{ id: "c1", span: "1/1", blocks: null }],
+  } as unknown as LayoutBuilderRow;
+  assert.deepEqual(normalizeLayoutRow(empty).columns[0]?.blocks, []);
+});
+
+test("isLayoutBuilderRow detects span on any column, not just the first", () => {
+  assert.equal(isLayoutBuilderRow({ id: "row-1", layout: "1/1" }), true);
+  assert.equal(
+    isLayoutBuilderRow({
+      id: "row-1",
+      columns: [
+        { id: "c1", blocks: [] },
+        { id: "c2", span: "1/2", blocks: [] },
+      ],
+    }),
+    true,
+  );
+  assert.equal(isLayoutBuilderRow({ id: "row-1", columns: [{ id: "c1", blocks: [] }] }), false);
+  assert.equal(isLayoutBuilderRow({ foo: "bar" }), false);
+  assert.equal(isLayoutBuilderRow(null), false);
+  assert.doesNotThrow(() => isLayoutBuilderRow({ id: "row-1", columns: ["x", 1, null] }));
+  assert.equal(isLayoutBuilderRow({ id: "row-1", columns: ["x", 1, null] }), false);
+  for (const columns of [["x"], [0], [true], ["a", "b"]]) {
+    assert.doesNotThrow(() => isLayoutBuilderRow({ columns }));
+    assert.equal(isLayoutBuilderRow({ columns }), false);
+  }
 });

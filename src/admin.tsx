@@ -1,3 +1,10 @@
+/**
+ * EmDash admin field widget for editing bento layout JSON.
+ *
+ * Renders rows and columns on a 12-column preview grid, embeds block builders
+ * per column, and persists plain JSON. Empty fields stay `[]` until the editor
+ * adds the first row; normalization tolerates legacy singleton rows and blocks.
+ */
 import { Button, Input, MenuBar, Select } from "@cloudflare/kumo";
 import {
   ArrowDownIcon,
@@ -7,17 +14,19 @@ import {
   PlusIcon,
   TrashIcon,
 } from "@phosphor-icons/react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { CSSProperties, ChangeEvent } from "react";
 import { BlocksField } from "@bnomei/emdash-blocks/admin";
 import type { BlockBuilderBlock, BlockBuilderValue } from "@bnomei/emdash-blocks";
 import { useAdminLocale } from "./admin-locale";
+import { asBlocksArray, isLayoutBuilderRow } from "./render";
 import { bentoMessage, formatBentoMessage, localizedString, type BentoI18nConfig } from "./i18n";
 import {
   DEFAULT_LAYOUT_PATTERN,
   columnsToLayout,
   layoutColumns as buildLayoutColumns,
   layoutColumnsPreservingExisting,
+  layoutGridSpans,
   layoutSpans,
   normalizeLayoutPattern,
   spanToGridColumns,
@@ -193,7 +202,7 @@ function normalizeBlock(value: unknown, index: number): BlockBuilderBlock {
 }
 
 function normalizeBlocks(value: unknown): BlockBuilderValue {
-  return Array.isArray(value) ? value.map((item, index) => normalizeBlock(item, index)) : [];
+  return asBlocksArray(value).map((item, index) => normalizeBlock(item, index));
 }
 
 function normalizeColumn(
@@ -228,8 +237,8 @@ function normalizeRow(value: unknown, rowIndex: number): LayoutBuilderRow {
   const columns = layoutColumnsPreservingExisting(
     layoutPattern,
     existingColumns,
-    (_index, span) => ({
-      id: randomId("column"),
+    (columnIndex, span) => ({
+      id: `layout-${rowIndex + 1}-column-${columnIndex + 1}`,
       span,
       blocks: [],
     }),
@@ -243,8 +252,31 @@ function normalizeRow(value: unknown, rowIndex: number): LayoutBuilderRow {
   };
 }
 
+// Stored ids can collide with positional ids used as React keys; dedupe deterministically.
+function uniqueId(id: string, index: number, seen: Set<string>): string {
+  let candidate = id;
+  let attempt = 1;
+  while (seen.has(candidate)) {
+    candidate = `${id}-${index + 1}-${attempt}`;
+    attempt += 1;
+  }
+  seen.add(candidate);
+  return candidate;
+}
+
 function asLayouts(value: unknown): LayoutBuilderValue {
-  return Array.isArray(value) ? value.map((item, index) => normalizeRow(item, index)) : [];
+  const rows = Array.isArray(value) ? value : isLayoutBuilderRow(value) ? [value] : [];
+  const seenRowIds = new Set<string>();
+  return rows.map((item, index) => {
+    const row = normalizeRow(item, index);
+    const id = uniqueId(row.id, index, seenRowIds);
+    const seenColumnIds = new Set<string>();
+    const columns = row.columns.map((column, columnIndex) => {
+      const columnId = uniqueId(column.id, columnIndex, seenColumnIds);
+      return columnId === column.id ? column : { ...column, id: columnId };
+    });
+    return { ...row, id, columns };
+  });
 }
 
 function compactControlWidth(values: string[], min = 8, max = 42) {
@@ -294,8 +326,11 @@ function LayoutPatternField({
   onCommit: (value: string) => void;
 }) {
   const [draft, setDraft] = useState(value);
+  const isFocused = useRef(false);
 
   useEffect(() => {
+    // Structural row edits change `value` while the editor is typing; skip draft reset until blur.
+    if (isFocused.current) return;
     setDraft(value);
   }, [value]);
 
@@ -309,7 +344,11 @@ function LayoutPatternField({
         style={layoutPatternInputStyle}
         value={draft}
         onChange={(event: ChangeEvent<HTMLInputElement>) => setDraft(event.currentTarget.value)}
+        onFocus={() => {
+          isFocused.current = true;
+        }}
         onBlur={() => {
+          isFocused.current = false;
           const nextLayout = normalizeLayoutPattern(draft, fallbackLayout ?? "");
           setDraft(nextLayout);
           onCommit(nextLayout);
@@ -340,6 +379,7 @@ function BlocksMiniEditor({
   );
 }
 
+/** Primary `bento:layouts` field widget: row/column editor with nested block fields. */
 export function LayoutsField({
   value,
   onChange,
@@ -408,37 +448,35 @@ export function LayoutsField({
         </div>
       ) : null}
       {layouts.map((row, rowIndex) => {
-        const layoutMenuOptions =
-          layouts.length > 1
+        const rowGridSpans = layoutGridSpans(row.columns.map((column) => column.span));
+        const layoutMenuOptions = [
+          ...(rowIndex > 0
             ? [
-                ...(rowIndex > 0
-                  ? [
-                      {
-                        icon: <ArrowUpIcon size={14} />,
-                        id: "move-up",
-                        tooltip: bentoMessage("moveLayoutUp", i18n),
-                        onClick: () => moveLayout(rowIndex, rowIndex - 1),
-                      },
-                    ]
-                  : []),
-                ...(rowIndex < layouts.length - 1
-                  ? [
-                      {
-                        icon: <ArrowDownIcon size={14} />,
-                        id: "move-down",
-                        tooltip: bentoMessage("moveLayoutDown", i18n),
-                        onClick: () => moveLayout(rowIndex, rowIndex + 1),
-                      },
-                    ]
-                  : []),
                 {
-                  icon: <TrashIcon size={14} />,
-                  id: "remove",
-                  tooltip: bentoMessage("removeLayout", i18n),
-                  onClick: () => updateLayouts(layouts.filter((_row, index) => index !== rowIndex)),
+                  icon: <ArrowUpIcon size={14} />,
+                  id: "move-up",
+                  tooltip: bentoMessage("moveLayoutUp", i18n),
+                  onClick: () => moveLayout(rowIndex, rowIndex - 1),
                 },
               ]
-            : [];
+            : []),
+          ...(rowIndex < layouts.length - 1
+            ? [
+                {
+                  icon: <ArrowDownIcon size={14} />,
+                  id: "move-down",
+                  tooltip: bentoMessage("moveLayoutDown", i18n),
+                  onClick: () => moveLayout(rowIndex, rowIndex + 1),
+                },
+              ]
+            : []),
+          {
+            icon: <TrashIcon size={14} />,
+            id: "remove",
+            tooltip: bentoMessage("removeLayout", i18n),
+            onClick: () => updateLayouts(layouts.filter((_row, index) => index !== rowIndex)),
+          },
+        ];
 
         return (
           <section key={row.id} style={rowStyle}>
@@ -456,6 +494,7 @@ export function LayoutsField({
               <LayoutPatternField
                 id={`${id}-${rowIndex}-layout`}
                 value={row.layout}
+                fallbackLayout={row.layout || columnsToLayout(row.columns)}
                 ariaLabel={bentoMessage("layout", i18n)}
                 onCommit={(layout) =>
                   updateRow(rowIndex, {
@@ -476,7 +515,7 @@ export function LayoutsField({
             </div>
             <div style={columnGridStyle}>
               {row.columns.map((column, columnIndex) => {
-                const gridSpan = spanToGridColumns(column.span);
+                const gridSpan = rowGridSpans[columnIndex] ?? spanToGridColumns(column.span);
                 const columnSpanOptions = spanOptions(row.layout);
                 const columnSpanValue = columnSpanOptions.some((item) => item.value === column.span)
                   ? column.span
@@ -650,6 +689,7 @@ export function LayoutsField({
   );
 }
 
+/** EmDash admin field widget registry (`bento:layouts` maps to `LayoutsField`). */
 export const fields = {
   layouts: LayoutsField,
 };
