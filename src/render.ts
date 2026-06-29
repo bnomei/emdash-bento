@@ -44,7 +44,7 @@ function normalizeLayoutColumn(
         ? col.id
         : `layout-${rowIndex + 1}-column-${columnIndex + 1}`,
     span: typeof col.span === "string" && col.span ? col.span : "1/1",
-    blocks: normalizeBlocks(asBlocksArray(col.blocks) as LayoutBuilderColumn["blocks"]),
+    blocks: normalizeBlocks(asBlocksArray(col.blocks)),
   };
 }
 
