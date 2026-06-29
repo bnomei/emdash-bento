@@ -78,7 +78,9 @@ export function normalizeLayoutRow(layout: LayoutBuilderRow, rowIndex = 0): Layo
 }
 
 /** Coerces a field value to a row array, wrapping a singleton row object when needed. */
-export function asLayoutRows(value?: LayoutBuilderValue | LayoutBuilderRow | null): LayoutBuilderValue {
+export function asLayoutRows(
+  value?: LayoutBuilderValue | LayoutBuilderRow | null,
+): LayoutBuilderValue {
   if (Array.isArray(value)) return value;
   return isLayoutBuilderRow(value) ? [value] : [];
 }

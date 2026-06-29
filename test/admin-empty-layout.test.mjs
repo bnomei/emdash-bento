@@ -62,7 +62,10 @@ test("layout draft is not overwritten while the field is focused", () => {
 
 test("frontend README uses row-level grid allocation", () => {
   assert.match(readme, /import \{ layoutGridSpans, visibleLayoutRows \}/);
-  assert.match(readme, /const gridSpans = layoutGridSpans\(row\.columns\.map\(\(column\) => column\.span\)\)/);
+  assert.match(
+    readme,
+    /const gridSpans = layoutGridSpans\(row\.columns\.map\(\(column\) => column\.span\)\)/,
+  );
   assert.match(readme, /style=\{`--span: \$\{gridSpans\[columnIndex\] \?\? 12\}`\}/);
   assert.doesNotMatch(readme, /spanToGridColumns\(column\.span\)/);
 });
