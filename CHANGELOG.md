@@ -4,6 +4,16 @@ All notable changes to this package will be documented in this file.
 
 This project follows semantic versioning.
 
+## 0.2.2 - 2026-06-29
+
+- Fixed layout builder normalization for invalid drafts, singleton rows and
+  blocks, null holes, duplicate ids, and focused layout edits.
+- Fixed row grid allocation so full-width fractional rows stay on one 12-column
+  grid line, including near-one floating point totals.
+- Improved fallback locale resolution for Bento admin messages.
+- Updated the `@bnomei/emdash-blocks` peer and development dependency range to
+  `^0.2.1`.
+
 ## 0.2.1 - 2026-06-18
 
 - Updated the `@bnomei/emdash-blocks` peer and development dependency range to
