@@ -16,7 +16,6 @@ jobs:
     timeout-minutes: 10
     env:
       CI: true
-      NPM_CONFIG_CACHE: ${{ runner.temp }}/npm-cache
 
     steps:
       - name: Checkout
