@@ -180,9 +180,46 @@ happen before values are saved into EmDash.
 - Admin entry: `@bnomei/emdash-bento/admin`.
 - Type declarations are included from `dist/`.
 - Peer dependencies: `@bnomei/emdash-blocks` `^0.2.1`, `emdash`
-  `>=0.17.0`, `react` `^18.0.0 || ^19.0.0`, `react-dom`
-  `^18.0.0 || ^19.0.0`, `@cloudflare/kumo` `^2.5.0`, and
+  `^1.2.0`, `react` `^18.0.0 || ^19.0.0`, `react-dom`
+  `^18.0.0 || ^19.0.0`, `@cloudflare/kumo` `2.6.0`, and
   `@phosphor-icons/react` `^2.1.10`.
+
+Kumo matches the version used to compile EmDash 1.2's admin stylesheet. Upgrading
+Kumo independently can leave component classes missing from that stylesheet.
+
+## Development and Release Checks
+
+Use Node.js 22.18+ (22.x), 24.11+ (24.x), or 26+ for the Vite+ toolchain.
+
+```sh
+npm ci
+npx playwright install --with-deps chromium
+npm run check
+npm run typecheck
+npm test
+npm run pack:check
+npm run types:check
+npm pack --dry-run
+```
+
+`npm test` runs unit/registration tests and Playwright Chromium tests against the
+built admin entry, real Blocks/Kumo components, and EmDash 1.2's published admin
+CSS. Browser checks cover clean empty mounts, row and column operations, invalid
+layout drafts, nested block editing, locale changes, and fractional grid geometry.
+Light/dark screenshots capture empty and populated fields, the open width
+menu, and a narrow localized empty state for manual review. This is a controlled widget fixture,
+not a full CMS login, database-save, or media-upload end-to-end test.
+
+Use `npm run test:unit` or `npm run test:browser` for focused runs. Screenshots
+are generated at 2x scale under ignored `test-results/`; they are review evidence,
+not committed baselines or automatic pixel comparisons. CI failures retain
+screenshots and traces in the `browser-results` artifact. Tests, fixtures,
+Playwright configuration, and generated reports are excluded from the npm package
+by the `files` allowlist. The existing public `screenshot.png` is unchanged.
+
+Before publishing 0.3.0, date its changelog entry and publish a matching `v0.3.0`
+GitHub release. The existing release workflow tests and publishes to npm; preparing
+the version locally does not publish it.
 
 ## Status
 

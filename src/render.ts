@@ -11,26 +11,10 @@ import {
   normalizeLayoutPattern,
 } from "./layout.js";
 import type { LayoutBuilderColumn, LayoutBuilderRow, LayoutBuilderValue } from "./types.js";
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
-}
+import { asBlocksArray, isLayoutBuilderRow, isRecord } from "./value.js";
 
 export { layoutGridSpans, layoutSpans, spanToGridColumns } from "./layout.js";
-
-/** Type guard for a layout row object, including legacy rows with span only on later columns. */
-export function isLayoutBuilderRow(value: unknown): value is LayoutBuilderRow {
-  if (!isRecord(value)) return false;
-  if ("layout" in value) return true;
-  const columns = Array.isArray(value.columns) ? value.columns : [];
-  return columns.some((column) => isRecord(column) && "span" in column);
-}
-
-/** Coerces a blocks value to an array, wrapping a singleton block object when needed. */
-export function asBlocksArray(value: unknown): unknown[] {
-  if (Array.isArray(value)) return value;
-  return isRecord(value) ? [value] : [];
-}
+export { asBlocksArray, isLayoutBuilderRow } from "./value.js";
 
 function normalizeLayoutColumn(
   column: LayoutBuilderColumn,

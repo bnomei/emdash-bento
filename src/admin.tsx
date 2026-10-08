@@ -19,7 +19,7 @@ import type { CSSProperties, ChangeEvent } from "react";
 import { BlocksField } from "@bnomei/emdash-blocks/admin";
 import type { BlockBuilderBlock, BlockBuilderValue } from "@bnomei/emdash-blocks";
 import { useAdminLocale } from "./admin-locale";
-import { asBlocksArray, isLayoutBuilderRow } from "./render";
+import { asBlocksArray, isLayoutBuilderRow } from "./value";
 import { bentoMessage, formatBentoMessage, localizedString, type BentoI18nConfig } from "./i18n";
 import {
   DEFAULT_LAYOUT_PATTERN,

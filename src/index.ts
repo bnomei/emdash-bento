@@ -40,7 +40,7 @@ export type BentoDescriptorOptions = {
 };
 
 const PLUGIN_ID = "bento";
-const PLUGIN_VERSION = "0.2.1";
+const PLUGIN_VERSION = "0.3.0";
 const PACKAGE_NAME = "@bnomei/emdash-bento";
 
 /** Native EmDash plugin descriptor for Astro integrations (`emdash({ plugins: [...] })`). */

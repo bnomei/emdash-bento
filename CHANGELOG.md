@@ -4,6 +4,19 @@ All notable changes to this package will be documented in this file.
 
 This project follows semantic versioning.
 
+## 0.3.0 - Unreleased
+
+- Require EmDash `^1.2.0` and align Kumo with the admin's pinned `2.6.0`
+  components and stylesheet. Updated development tools and the dependency lockfile.
+- Raise the Node.js minimum to `22.18.0` for the upgraded EmDash/Vite+ toolchain.
+- Isolate browser-safe value helpers so the admin bundle no longer imports
+  server-only EmDash modules through the frontend renderer.
+- Add Chromium interaction tests against the built admin entry and the real
+  EmDash 1.2 stylesheet, with disposable light/dark screenshots for visual review.
+- Run browser tests in CI and before publishing, retaining failure screenshots
+  and traces. Check plugin registration against EmDash 1.2 and keep its version
+  aligned with the package version.
+
 ## 0.2.2 - 2026-06-29
 
 - Fixed layout builder normalization for invalid drafts, singleton rows and

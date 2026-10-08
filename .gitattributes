@@ -1,0 +1,4 @@
+# Keep the development test bed out of Git source archives.
+/test export-ignore
+/test/** export-ignore
+/playwright.config.ts export-ignore

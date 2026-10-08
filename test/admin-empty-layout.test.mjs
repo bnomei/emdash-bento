@@ -37,7 +37,7 @@ test("the remove-layout control is available even for the last remaining row", (
 
 test("a singleton row object is coerced into an editable row, not empty state", () => {
   assert.match(source, /isLayoutBuilderRow\(value\) \? \[value\] : \[\]/);
-  assert.match(source, /import \{[^}]*isLayoutBuilderRow[^}]*\} from "\.\/render"/);
+  assert.match(source, /import \{[^}]*isLayoutBuilderRow[^}]*\} from "\.\/value"/);
 });
 
 test("row and column ids are de-duplicated to avoid duplicate React keys", () => {
@@ -50,7 +50,7 @@ test("row and column ids are de-duplicated to avoid duplicate React keys", () =>
 });
 
 test("a singleton block object on a column is coerced, not emptied", () => {
-  assert.match(source, /import \{[^}]*asBlocksArray[^}]*\} from "\.\/render"/);
+  assert.match(source, /import \{[^}]*asBlocksArray[^}]*\} from "\.\/value"/);
   assert.match(source, /return asBlocksArray\(value\)\.map\(\(item, index\) => normalizeBlock/);
 });
 

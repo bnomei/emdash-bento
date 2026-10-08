@@ -11,6 +11,9 @@ build/
 coverage/
 .nyc_output/
 .vitest/
+test-results/
+playwright-report/
+.amp/
 
 # Tool caches
 .eslintcache
