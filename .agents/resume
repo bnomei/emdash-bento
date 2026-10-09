@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# No authentication, backing services, or wake-time repairs are needed.
+# Node, npm dependencies, and Chromium are restored with the orb snapshot.
